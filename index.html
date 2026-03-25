@@ -8,6 +8,9 @@
   <meta name="apple-mobile-web-app-title" content="黃金庫存">
   <meta name="theme-color" content="#0d0d0d">
   <title>黃金庫存管理</title>
+
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icon-192.png">
   
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -235,41 +238,6 @@
   </style>
 </head>
 <body>
-
-<script>
-  // ★ 動態建立 PWA Manifest 與 Icon
-  (function initPWA() {
-    const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 50"><defs><linearGradient id="gbar" x1="0" y1="0" x2="72" y2="50" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#a07830"/><stop offset="35%" stop-color="#f0d78c"/><stop offset="65%" stop-color="#c9a84c"/><stop offset="100%" stop-color="#8a6a00"/></linearGradient><linearGradient id="ginner" x1="0" y1="0" x2="60" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#8a6a00"/><stop offset="50%" stop-color="#c9a84c"/><stop offset="100%" stop-color="#6a5000"/></linearGradient></defs><rect width="72" height="50" fill="#0d0d0d"/><polygon points="6,0 66,0 72,50 0,50" fill="url(#gbar)"/><polygon points="11,6 61,6 66,44 6,44" fill="url(#ginner)"/><text x="36" y="22" text-anchor="middle" fill="#f0d78c" font-size="9" font-family="serif" font-weight="bold" letter-spacing="1">GOLD</text><text x="36" y="35" text-anchor="middle" fill="#c9a84c" font-size="7.5" font-family="sans-serif" letter-spacing="0.5">999.9</text></svg>`;
-    const iconUrl = 'data:image/svg+xml;base64,' + btoa(svgIcon);
-
-    const manifestData = {
-      name: "黃金庫存管理系統",
-      short_name: "黃金庫存",
-      description: "專業的貴金屬出入庫存與市值換算系統",
-      start_url: "/",
-      display: "standalone",
-      background_color: "#0d0d0d",
-      theme_color: "#0d0d0d",
-      icons: [
-        { src: iconUrl, sizes: "192x192 512x512", type: "image/svg+xml", purpose: "any maskable" }
-      ]
-    };
-
-    const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
-    const manifestUrl = URL.createObjectURL(manifestBlob);
-
-    const manifestLink = document.createElement('link');
-    manifestLink.rel = 'manifest';
-    manifestLink.href = manifestUrl;
-    document.head.appendChild(manifestLink);
-
-    const appleIconLink = document.createElement('link');
-    appleIconLink.rel = 'apple-touch-icon';
-    appleIconLink.href = iconUrl;
-    document.head.appendChild(appleIconLink);
-  })();
-</script>
-
 <div id="app">
 
   <div id="loading">
@@ -1123,7 +1091,7 @@ function clearForm() {
   document.getElementById('f-err').textContent = '';
   
   const pills = document.querySelectorAll('.type-pill');
-  let targetPill = pills[1]; // 一般進貨
+  let targetPill = pills[1]; 
   pickType('一般進貨', targetPill);
 }
 
