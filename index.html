@@ -16,14 +16,12 @@
     :root {
       --gold: #c9a84c; --gold-light: #f0d78c; --gold-dark: #8a6a00;
       --bg: #0d0d0d; --bg2: #161616; --bg3: #1f1f1f; --bg4: #2a2a2a;
-      /* 調整字體顏色變得更亮白 */
       --text: #ffffff; --text2: #e0e0e0; --text3: #cccccc;
       --green: #4ecb71; --green-bg: #0a2416; --red: #e56b4e; --red-bg: #2b0d0d;
-      --border: #333333; /* 邊框也稍微調亮增加立體感 */
+      --border: #333333;
       --sat: env(safe-area-inset-top, 0px);
       --sab: env(safe-area-inset-bottom, 0px);
     }
-    /* 整體字體調大 */
     html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, 'PingFang TC', 'Microsoft JhengHei', sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; font-size: 16px; }
     #app { max-width: 430px; margin: 0 auto; min-height: 100vh; background: var(--bg); position: relative; }
 
@@ -57,6 +55,8 @@
     .input-group { margin-bottom: 14px; }
     .input-label { font-size: 14px; color: var(--text2); margin-bottom: 6px; display: block; }
     .input-field { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 11px; padding: 14px; color: var(--text); font-size: 16px; outline: none; transition: border-color 0.2s; font-family: inherit; -webkit-appearance: none; }
+    /* DateTime 欄位的修正 */
+    input[type="datetime-local"] { color-scheme: dark; }
     .input-field:focus { border-color: var(--gold); }
     .btn-primary { width: 100%; background: linear-gradient(135deg, #c9a84c, #e8c96a); border: none; border-radius: 12px; padding: 15px; color: #1a1200; font-size: 17px; font-weight: bold; cursor: pointer; font-family: inherit; transition: opacity 0.2s; -webkit-appearance: none; display: block; }
     .btn-primary:active { opacity: 0.8; }
@@ -75,15 +75,16 @@
     .header-lbma svg { width: 100%; height: 100%; }
     .header-title { font-size: 18px; color: var(--gold-light); font-weight: 500; }
     .header-avatar { width: 35px; height: 35px; border-radius: 50%; background: #2a1f00; border: 1.5px solid var(--gold); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: var(--gold); cursor: pointer; flex-shrink: 0; }
+    .btn-back { background: transparent; border: none; color: var(--gold); font-size: 16px; font-weight: bold; cursor: pointer; padding: 4px 0; width: 60px; text-align: left; }
 
-    /* Bottom Nav (修改了預設顏色與字體大小) */
+    /* Bottom Nav */
     .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; background: #080808; border-top: 1px solid #333; padding: 6px 0 calc(6px + var(--sab)); display: flex; z-index: 20; }
     .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 4px 0; }
     .nav-icon { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
-    .nav-label { font-size: 12px; color: #ffffff; font-weight: 500; transition: color 0.15s; } /* 修改為白色 */
+    .nav-label { font-size: 12px; color: #ffffff; font-weight: 500; transition: color 0.15s; }
     .nav-btn.active .nav-label { color: var(--gold); }
     .nav-icon-svg { transition: stroke 0.15s; }
-    .nav-btn .nav-icon-svg { stroke: #ffffff; } /* 修改為白色 */
+    .nav-btn .nav-icon-svg { stroke: #ffffff; }
     .nav-btn.active .nav-icon-svg { stroke: var(--gold); }
     .nav-add-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 0; }
     .nav-add-btn { width: 54px; height: 54px; border-radius: 50%; background: linear-gradient(135deg, #c9a84c, #f0d78c); display: flex; align-items: center; justify-content: center; position: relative; top: -18px; box-shadow: 0 4px 20px rgba(201,168,76,0.45); }
@@ -112,7 +113,6 @@
     .sec-title { font-size: 15px; color: var(--text); font-weight: bold; }
     .sec-more { font-size: 13px; color: var(--gold); cursor: pointer; }
     
-    /* 交易紀錄卡片與刪除按鈕 */
     .tx-item { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 11px 13px; display: flex; align-items: center; gap: 11px; margin-bottom: 8px; }
     .tx-dot { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
     .tx-dot.in { background: var(--green-bg); }
@@ -135,6 +135,13 @@
     .empty-text { font-size: 16px; color: var(--text2); }
     .empty-sub { font-size: 14px; color: var(--text3); margin-top: 6px; }
 
+    /* History */
+    .history-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
+    /* ★ 修改 Filter Bar 讓他自動換行 */
+    .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 0.5px solid var(--border); }
+    .fpill { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 8px; padding: 8px 14px; font-size: 14px; color: var(--text2); cursor: pointer; flex-grow: 1; text-align: center; transition: all 0.15s; }
+    .fpill.active { background: #1c1600; border-color: var(--gold); color: var(--gold-light); font-weight: bold; }
+
     /* Form */
     .form-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
     .form-group { margin-bottom: 18px; }
@@ -156,13 +163,6 @@
     .form-error { color: var(--red); font-size: 13px; margin-top: 4px; min-height: 18px; }
     .btn-row { display: flex; gap: 10px; margin-top: 8px; padding-bottom: 16px; }
     .btn-clear { background: var(--bg3); color: var(--text); border: 0.5px solid var(--border); border-radius: 12px; padding: 14px; font-size: 16px; cursor: pointer; font-family: inherit; flex: 0 0 80px; -webkit-appearance: none; }
-
-    /* History */
-    .history-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
-    .filter-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-    .filter-bar::-webkit-scrollbar { display: none; }
-    .fpill { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 20px; padding: 8px 16px; font-size: 14px; color: var(--text2); cursor: pointer; white-space: nowrap; flex-shrink: 0; }
-    .fpill.active { background: #1c1600; border-color: var(--gold); color: var(--gold-light); font-weight: bold; }
 
     /* Converter */
     .conv-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
@@ -194,6 +194,19 @@
     .btn-logout { width: 100%; background: var(--red-bg); border: 1px solid rgba(229,107,78,0.4); border-radius: 12px; padding: 16px; color: var(--red); font-size: 16px; font-weight: bold; cursor: pointer; font-family: inherit; margin-top: 10px; -webkit-appearance: none; }
     .btn-logout:active { opacity: 0.7; }
 
+    /* ★ Daily Summary (新增的日結樣式) */
+    .daily-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
+    .daily-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .dc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 0.5px solid var(--border); padding-bottom: 10px; }
+    .dc-date { font-size: 16px; font-weight: bold; color: var(--gold-light); }
+    .dc-label-title { font-size: 13px; color: var(--text2); background: var(--bg4); padding: 4px 10px; border-radius: 6px; }
+    .dc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .dc-item { background: var(--bg3); border-radius: 8px; padding: 10px; text-align: center; }
+    .dc-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+    .dc-val { font-size: 16px; font-weight: bold; }
+    .dc-val.in { color: var(--green); }
+    .dc-val.out { color: var(--red); }
+
     /* Toast */
     #toast { position: fixed; bottom: calc(82px + var(--sab)); left: 50%; transform: translateX(-50%) translateY(16px); background: var(--text); border: none; border-radius: 10px; padding: 12px 24px; font-size: 15px; font-weight: bold; color: var(--bg); opacity: 0; transition: all 0.25s; z-index: 99; white-space: nowrap; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -210,15 +223,10 @@
         <svg viewBox="0 0 72 50" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="gbar" x1="0" y1="0" x2="72" y2="50" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#a07830"/>
-              <stop offset="35%" stop-color="#f0d78c"/>
-              <stop offset="65%" stop-color="#c9a84c"/>
-              <stop offset="100%" stop-color="#8a6a00"/>
+              <stop offset="0%" stop-color="#a07830"/><stop offset="35%" stop-color="#f0d78c"/><stop offset="65%" stop-color="#c9a84c"/><stop offset="100%" stop-color="#8a6a00"/>
             </linearGradient>
             <linearGradient id="ginner" x1="0" y1="0" x2="60" y2="40" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#8a6a00"/>
-              <stop offset="50%" stop-color="#c9a84c"/>
-              <stop offset="100%" stop-color="#6a5000"/>
+              <stop offset="0%" stop-color="#8a6a00"/><stop offset="50%" stop-color="#c9a84c"/><stop offset="100%" stop-color="#6a5000"/>
             </linearGradient>
           </defs>
           <polygon points="6,0 66,0 72,50 0,50" fill="url(#gbar)"/>
@@ -359,6 +367,11 @@
       </div>
       <div class="form-scroll">
         <div class="form-group">
+          <label class="form-label">交易時間 <span style="font-size:12px;color:var(--text3);">(預設為現在，修改即視為補登)</span></label>
+          <input type="datetime-local" class="input-field" id="f-datetime" />
+        </div>
+        
+        <div class="form-group">
           <label class="form-label">交易類別</label>
           <div class="type-grid">
             <div class="type-pill active" onclick="pickType('一般進貨',this)">一般進貨</div>
@@ -439,6 +452,10 @@
           <div class="profile-name" id="p-name">用戶</div>
           <div class="profile-email" id="p-email">-</div>
         </div>
+        <div class="menu-item" onclick="goScreen('daily')">
+          <div class="mi-left"><div class="mi-icon" style="background:#1a0f00;">📊</div><div class="mi-label">歷史日結報表</div></div>
+          <div class="mi-arrow">›</div>
+        </div>
         <div class="menu-item" onclick="doExport()">
           <div class="mi-left"><div class="mi-icon" style="background:#1a1800;">📥</div><div class="mi-label">匯出交易紀錄（CSV）</div></div>
           <div class="mi-arrow">›</div>
@@ -449,6 +466,16 @@
         </div>
         <button class="btn-logout" onclick="doLogout()">登出帳號</button>
       </div>
+    </div>
+
+    <div id="screen-daily" class="screen">
+      <div class="app-header">
+        <button class="btn-back" onclick="goScreen('profile')">‹ 返回</button>
+        <span class="header-title">歷史日結報表</span>
+        <div style="width:60px;"></div>
+      </div>
+      <div class="daily-scroll" id="daily-list">
+        </div>
     </div>
 
     <nav class="bottom-nav">
@@ -478,7 +505,7 @@
 <div id="toast"></div>
 
 <script>
-// Firebase config (從您的專案取得)
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyC6bE5RWW8sXkR4flSD-wdGamwyyTFJoSs",
   authDomain: "gold-inventory-app-a9eaf.firebaseapp.com",
@@ -511,6 +538,7 @@ auth.onAuthStateChanged(u => {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('auth-screen').classList.remove('active');
     document.getElementById('main-app').style.display = 'block';
+    clearForm(); // 登入時先預先載入「現在時間」
     subTx();
   } else {
     user = null;
@@ -564,12 +592,25 @@ async function doGoogleLogin() {
 
 async function doLogout() { await auth.signOut(); toast('已登出'); }
 
-const SCREENS = ['home','history','add','converter','profile'];
-const NAV_IDS = ['home','history',null,'converter','profile'];
+// ★ 加入 daily (日結) 分頁管理
+const SCREENS = ['home','history','add','converter','profile', 'daily'];
 function goScreen(name) {
   SCREENS.forEach(s => document.getElementById('screen-'+s)?.classList.toggle('active', s===name));
-  NAV_IDS.forEach(n => { if(n) document.getElementById('nb-'+n)?.classList.toggle('active', n===name); });
+  
+  // 底部導航狀態控制 (當在日結頁面時，保持帳號設定按鈕高亮)
+  ['home','history','converter','profile'].forEach(n => {
+    const el = document.getElementById('nb-'+n);
+    if(el) el.classList.remove('active');
+  });
+  let activeNav = name === 'daily' ? 'profile' : name;
+  if (activeNav !== 'add') {
+    const el = document.getElementById('nb-'+activeNav);
+    if(el) el.classList.add('active');
+  }
+
   if (name==='history') renderHistory();
+  if (name==='add') clearForm(); // 切換到新增頁面時，確保時間更新為最新
+  if (name==='daily') renderDailySummary(); // 切換到日結頁面時算圖
 }
 
 function txCol() { return db.collection('users').doc(user.uid).collection('transactions'); }
@@ -580,6 +621,8 @@ function subTx() {
     allTx = snap.docs.map(d => ({id: d.id, ...d.data()}));
     refreshDash();
     renderHistory();
+    // 如果停留在日結頁面，即時更新日結資料
+    if(document.getElementById('screen-daily').classList.contains('active')) renderDailySummary();
   }, err => { console.error(err); });
 }
 
@@ -587,14 +630,21 @@ async function doSubmit() {
   const mace = parseFloat(document.getElementById('w-m').value) || 0;
   const amount = parseInt(document.getElementById('f-amount').value) || 0;
   const errEl = document.getElementById('f-err');
+  
+  // ★ 抓取時間與判斷是否為補登
+  const dtInput = document.getElementById('f-datetime').value;
+  const txDate = dtInput ? new Date(dtInput) : new Date();
+  const isBackdated = Math.abs(Date.now() - txDate.getTime()) > 300000; // 差距大於 5 分鐘即視為補登
+
   errEl.textContent = '';
   if (mace === 0 && amount === 0) { errEl.textContent = '請至少輸入重量或金額'; return; }
   const btn = document.getElementById('submit-btn');
   btn.disabled = true; btn.textContent = '寫入中...';
   try {
     await txCol().add({
-      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-      date: new Date().toISOString(),
+      timestamp: firebase.firestore.Timestamp.fromDate(txDate), // 使用選擇的時間排序
+      date: txDate.toISOString(),
+      isBackdated: isBackdated, // 寫入補登標記
       type: fState.type,
       wDir: mace > 0 ? fState.wDir : '',
       mace: mace > 0 ? +mace.toFixed(3) : 0,
@@ -614,7 +664,6 @@ async function doSubmit() {
   finally { btn.disabled = false; btn.textContent = '確認寫入紀錄'; }
 }
 
-// 刪除資料函式 (新增)
 async function deleteTx(id) {
   if (!confirm('確定要刪除這筆紀錄嗎？\n(刪除後總庫存會自動重新計算)')) return;
   try {
@@ -666,9 +715,11 @@ function txCard(tx) {
   if (tx.mace > 0) { wStr = (isIn?'+':'-') + tx.mace.toFixed(3) + '錢'; wCls = isIn?'in':'out'; }
   else if (tx.amount > 0) { wStr = (tx.cDir==='收入'?'+':'-') + 'NT$' + tx.amount.toLocaleString(); wCls = tx.cDir==='收入'?'in':'out'; }
   const dateStr = tx.date ? new Date(tx.date).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
-  const meta = [dateStr, tx.target].filter(Boolean).join(' · ');
   
-  // 在卡片右側加入刪除按鈕
+  // ★ 加入紅字補登標籤判斷
+  const backdateBadge = tx.isBackdated ? '<span style="color:var(--red); font-weight:bold; margin-right:4px;">(補登)</span>' : '';
+  const meta = backdateBadge + [dateStr, tx.target].filter(Boolean).join(' · ');
+  
   return `<div class="tx-item">
             <div class="tx-dot ${dotCls}" style="color:${isIn?'var(--green)':'var(--red)'};">${icon}</div>
             <div class="tx-info"><div class="tx-type">${tx.type}</div><div class="tx-meta">${meta||'無備註'}</div></div>
@@ -682,6 +733,51 @@ function renderHistory() {
   const el = document.getElementById('history-list');
   if (!el) return;
   el.innerHTML = filtered.length ? filtered.map(txCard).join('') : '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">沒有符合的紀錄</div></div>';
+}
+
+// ★ 渲染歷史日結資料
+function renderDailySummary() {
+  const el = document.getElementById('daily-list');
+  if (!allTx.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">尚無日結資料</div></div>';
+    return;
+  }
+  
+  // 依據日期 (YYYY-MM-DD) 群組資料並加總
+  const grouped = {};
+  allTx.forEach(tx => {
+    // 若為補登紀錄，它也會基於您輸入的日期來統計
+    const d = tx.date ? new Date(tx.date).toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-') : '';
+    if(!d) return;
+    if(!grouped[d]) grouped[d] = { inW:0, outW:0, inC:0, outC:0 };
+    if(tx.wDir === '入庫') grouped[d].inW += tx.mace || 0;
+    if(tx.wDir === '出庫') grouped[d].outW += tx.mace || 0;
+    if(tx.cDir === '收入') grouped[d].inC += tx.amount || 0;
+    if(tx.cDir === '支出') grouped[d].outC += tx.amount || 0;
+  });
+
+  // 日期從新到舊排序
+  const dates = Object.keys(grouped).sort((a,b) => b.localeCompare(a));
+  
+  let html = '';
+  dates.forEach(d => {
+    const g = grouped[d];
+    html += `
+      <div class="daily-card">
+        <div class="dc-header">
+          <div class="dc-date">${d}</div>
+          <div class="dc-label-title">日結總覽</div>
+        </div>
+        <div class="dc-grid">
+          <div class="dc-item"><div class="dc-label">入庫重量(錢)</div><div class="dc-val in">+${g.inW.toFixed(3)}</div></div>
+          <div class="dc-item"><div class="dc-label">出庫重量(錢)</div><div class="dc-val out">-${g.outW.toFixed(3)}</div></div>
+          <div class="dc-item"><div class="dc-label">當日收入(元)</div><div class="dc-val in">+${g.inC.toLocaleString()}</div></div>
+          <div class="dc-item"><div class="dc-label">當日支出(元)</div><div class="dc-val out">-${g.outC.toLocaleString()}</div></div>
+        </div>
+      </div>
+    `;
+  });
+  el.innerHTML = html;
 }
 
 function setFilter(f, el) {
@@ -713,8 +809,15 @@ function setCDir(d) {
   document.getElementById('cd-out').className = 'dir-opt'+(d==='支出'?' out-active':'');
 }
 
+// ★ 輔助函式：取得符合 input[type="datetime-local"] 格式的當下時間
+function getNowLocal() {
+  const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+  return (new Date(Date.now() - tzoffset)).toISOString().slice(0, 16);
+}
+
 function clearForm() {
   ['w-g','w-m','w-t','w-o','f-amount','f-price','f-target','f-note'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('f-datetime').value = getNowLocal(); // ★ 每次重置表單都把時間預設為「現在」
   document.getElementById('f-err').textContent = '';
   pickType('一般進貨', document.querySelector('.type-pill'));
 }
@@ -749,18 +852,13 @@ function syncCV(src) {
   fState.sync = false;
 }
 
-// 依照需求重新規劃匯出功能 (新增累加計算)
 function doExport() {
   if (!allTx.length) { toast('尚無資料可匯出', 'error'); return; }
   
-  // 建立您指定的表頭 Title
-  const h = ['交易序號', '交易日期', '交易類別', '出庫/入庫(台錢)', '出庫重量(台錢)', '入庫重量(台錢)', '庫存總重(台錢)', '出庫金額', '入庫金額', '結餘金額', '參考牌價', '交易對象', '備註'];
-  
-  // 先將資料依時間「從舊到新」排序，才能正確計算歷史累加總庫存
+  const h = ['交易序號', '交易日期', '交易類別', '出庫/入庫(台錢)', '出庫重量(台錢)', '入庫重量(台錢)', '庫存總重(台錢)', '出庫金額', '入庫金額', '結餘金額', '參考牌價', '交易對象', '備註', '是否為補登'];
   const sorted = [...allTx].sort((a,b)=>(a.timestamp?.seconds||0)-(b.timestamp?.seconds||0));
   
-  let runW = 0; // 追蹤累加重量
-  let runC = 0; // 追蹤累加金額
+  let runW = 0; let runC = 0;
 
   const rows = sorted.map((tx, index) => {
     const dateStr = tx.date ? new Date(tx.date).toLocaleString('zh-TW', {hour12: false}) : '';
@@ -768,29 +866,19 @@ function doExport() {
     const outW = tx.wDir === '出庫' ? (tx.mace || 0) : 0;
     const inC = tx.cDir === '收入' ? (tx.amount || 0) : 0;
     const outC = tx.cDir === '支出' ? (tx.amount || 0) : 0;
+    const isBkd = tx.isBackdated ? '是' : '';
 
-    // 計算當下總結餘
     runW = runW + inW - outW;
     runC = runC + inC - outC;
 
     return [
-      index + 1,             // 交易序號
-      dateStr,               // 交易日期
-      tx.type || '',         // 交易類別
-      tx.wDir || '',         // 出庫/入庫
-      outW > 0 ? outW : '',  // 出庫重量
-      inW > 0 ? inW : '',    // 入庫重量
-      runW.toFixed(3),       // 庫存總重 (累加)
-      outC > 0 ? outC : '',  // 出庫金額 (您表格裡的支出)
-      inC > 0 ? inC : '',    // 入庫金額 (您表格裡的收入)
-      runC,                  // 結餘金額 (累加)
-      tx.price || '',        // 參考牌價
-      tx.target || '',       // 交易對象
-      tx.note || ''          // 備註
+      index + 1, dateStr, tx.type || '', tx.wDir || '', 
+      outW > 0 ? outW : '', inW > 0 ? inW : '', runW.toFixed(3), 
+      outC > 0 ? outC : '', inC > 0 ? inC : '', runC, 
+      tx.price || '', tx.target || '', tx.note || '', isBkd
     ];
   });
   
-  // 轉成 CSV 格式並加上 UTF-8 BOM，防止 Excel 開啟亂碼
   const csv = '\uFEFF' + [h,...rows].map(r=>r.map(v=>`"${v!==undefined?v:''}"`).join(',')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
@@ -799,7 +887,6 @@ function doExport() {
   toast('CSV 報表已成功匯出！', 'success');
 }
 
-// 修改 About 內容
 function showAbout() {
   alert('貴金屬出入庫存系統 v1.0.0\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
