@@ -2,9 +2,9 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="黃金庫存">
   <meta name="theme-color" content="#0d0d0d">
   <title>黃金庫存管理</title>
@@ -152,7 +152,6 @@
     .form-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
     .form-group { margin-bottom: 18px; }
     .form-label { font-size: 14px; color: var(--text2); margin-bottom: 8px; display: block; letter-spacing: 0.03em; font-weight: 500; }
-    /* ★ 修正為可換行的 flex box，確保按鈕數量多時不會跑版 */
     .type-grid { display: flex; flex-wrap: wrap; gap: 8px; }
     .type-pill { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 9px; padding: 10px 12px; text-align: center; font-size: 13px; color: var(--text2); cursor: pointer; transition: all 0.15s; flex-grow: 1; }
     .type-pill.active { background: #1c1600; border-color: var(--gold); color: var(--gold-light); font-weight: bold; }
@@ -236,6 +235,41 @@
   </style>
 </head>
 <body>
+
+<script>
+  // ★ 動態建立 PWA Manifest 與 Icon
+  (function initPWA() {
+    const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 50"><defs><linearGradient id="gbar" x1="0" y1="0" x2="72" y2="50" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#a07830"/><stop offset="35%" stop-color="#f0d78c"/><stop offset="65%" stop-color="#c9a84c"/><stop offset="100%" stop-color="#8a6a00"/></linearGradient><linearGradient id="ginner" x1="0" y1="0" x2="60" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#8a6a00"/><stop offset="50%" stop-color="#c9a84c"/><stop offset="100%" stop-color="#6a5000"/></linearGradient></defs><rect width="72" height="50" fill="#0d0d0d"/><polygon points="6,0 66,0 72,50 0,50" fill="url(#gbar)"/><polygon points="11,6 61,6 66,44 6,44" fill="url(#ginner)"/><text x="36" y="22" text-anchor="middle" fill="#f0d78c" font-size="9" font-family="serif" font-weight="bold" letter-spacing="1">GOLD</text><text x="36" y="35" text-anchor="middle" fill="#c9a84c" font-size="7.5" font-family="sans-serif" letter-spacing="0.5">999.9</text></svg>`;
+    const iconUrl = 'data:image/svg+xml;base64,' + btoa(svgIcon);
+
+    const manifestData = {
+      name: "黃金庫存管理系統",
+      short_name: "黃金庫存",
+      description: "專業的貴金屬出入庫存與市值換算系統",
+      start_url: "/",
+      display: "standalone",
+      background_color: "#0d0d0d",
+      theme_color: "#0d0d0d",
+      icons: [
+        { src: iconUrl, sizes: "192x192 512x512", type: "image/svg+xml", purpose: "any maskable" }
+      ]
+    };
+
+    const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+    const manifestUrl = URL.createObjectURL(manifestBlob);
+
+    const manifestLink = document.createElement('link');
+    manifestLink.rel = 'manifest';
+    manifestLink.href = manifestUrl;
+    document.head.appendChild(manifestLink);
+
+    const appleIconLink = document.createElement('link');
+    appleIconLink.rel = 'apple-touch-icon';
+    appleIconLink.href = iconUrl;
+    document.head.appendChild(appleIconLink);
+  })();
+</script>
+
 <div id="app">
 
   <div id="loading">
@@ -896,7 +930,7 @@ function txCard(tx) {
   else if (tx.type === '師傅領料') icon = '🔨';
   else if (tx.type === '成品繳庫') icon = '💎';
   else if (tx.type === '損耗核銷') icon = '📉';
-  else if (tx.type === '期初設定') icon = '📌'; // ★ 期初設定的 Icon
+  else if (tx.type === '期初設定') icon = '📌'; 
 
   let wStr = tx.mace > 0 ? ((isIn?'+':'-') + tx.mace.toFixed(3) + ' 錢') : '';
   let wCls = isIn ? 'in' : 'out';
@@ -1044,7 +1078,6 @@ function setFilter(f, el) {
   renderHistory();
 }
 
-// ★ 加入期初設定的對應邏輯 (預設為入庫與收入)
 const TYPE_MAP = { 
   '期初設定':{w:'入庫',c:'收入'},
   '一般進貨':{w:'入庫',c:'支出'},
@@ -1088,7 +1121,7 @@ function clearForm() {
   ['w-g','w-m','w-t','w-o','f-amount','f-price','f-target','f-note'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
   document.getElementById('f-datetime').value = getNowLocal(); 
   document.getElementById('f-err').textContent = '';
-  // 預設跳回一般進貨
+  
   const pills = document.querySelectorAll('.type-pill');
   let targetPill = pills[1]; // 一般進貨
   pickType('一般進貨', targetPill);
@@ -1132,7 +1165,6 @@ function calcValue() {
   document.getElementById('cv-total').textContent = 'NT$ ' + total.toLocaleString();
 }
 
-// ★ 更新：使用 SheetJS 匯出正統 Excel (.xlsx) 以控制欄位寬度
 function doExport() {
   if (!allTx.length) { toast('尚無資料可匯出', 'error'); return; }
   
@@ -1163,31 +1195,17 @@ function doExport() {
     ];
   });
   
-  // 建立 SheetJS 的 Worksheet
   const ws = XLSX.utils.aoa_to_sheet([h, ...rows]);
   
-  // 設定 Excel 每個欄位的預設寬度 (wch = width in characters)
   ws['!cols'] = [
-    { wch: 10 }, // 交易序號
-    { wch: 22 }, // 交易日期
-    { wch: 12 }, // 交易類別
-    { wch: 15 }, // 出庫/入庫
-    { wch: 15 }, // 出庫重量
-    { wch: 15 }, // 入庫重量
-    { wch: 18 }, // 庫存總重
-    { wch: 12 }, // 出庫金額
-    { wch: 12 }, // 入庫金額
-    { wch: 14 }, // 結餘金額
-    { wch: 12 }, // 參考牌價
-    { wch: 15 }, // 交易對象
-    { wch: 25 }, // 備註 (拉寬)
-    { wch: 10 }  // 狀態
+    { wch: 10 }, { wch: 22 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, 
+    { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 15 }, 
+    { wch: 25 }, { wch: 10 }
   ];
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "庫存紀錄");
   
-  // 匯出 .xlsx
   XLSX.writeFile(wb, '貴金屬庫存紀錄_'+new Date().toISOString().slice(0,10)+'.xlsx');
   
   localStorage.setItem('lastBackupDate', Date.now());
@@ -1196,12 +1214,10 @@ function doExport() {
   toast('Excel 報表已成功匯出！', 'success');
 }
 
-// ★ 新增：讀取 Excel/CSV 檔案並匯入還原至 Firebase
 async function doImport(event) {
   const file = event.target.files[0];
   if (!file) return;
   
-  // 讓使用者再次確認
   if (!confirm('警告：此操作會將檔案內的紀錄「新增」至您目前的帳號中。\n若為還原空帳號則沒問題；若原本已有資料，可能會產生重複。\n確定要繼續匯入嗎？')) {
     event.target.value = '';
     return;
@@ -1214,7 +1230,6 @@ async function doImport(event) {
       const workbook = XLSX.read(data, { type: 'array' });
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
-      // 轉換成二維陣列
       const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
       
       if (json.length < 2) {
@@ -1227,28 +1242,14 @@ async function doImport(event) {
       let count = 0;
       const promises = [];
       
-      // 從第二行開始讀取 (跳過標題)
       for (let i = 1; i < json.length; i++) {
         const row = json[i];
         if (!row || row.length === 0) continue;
-        
-        // 欄位對應:
-        // 1: 交易日期 (YYYY/MM/DD HH:mm:ss)
-        // 2: 交易類別
-        // 4: 出庫重量
-        // 5: 入庫重量
-        // 7: 出庫金額
-        // 8: 入庫金額
-        // 10: 參考牌價
-        // 11: 交易對象
-        // 12: 備註
-        // 13: 狀態 (修改/補登)
 
         const dateStr = row[1];
         const type = row[2];
-        if(!dateStr || !type) continue; // 略過無效行
+        if(!dateStr || !type) continue; 
         
-        // 處理時間格式
         const txDate = new Date(dateStr.replace(/-/g, '/')); 
         if (isNaN(txDate.getTime())) continue;
 
@@ -1284,22 +1285,20 @@ async function doImport(event) {
           note: row[12] || ''
         };
         
-        // 將寫入指令存入陣列
         promises.push(txCol().add(txData));
         count++;
       }
       
-      // 等待所有資料批次寫入完成
       await Promise.all(promises);
       toast(`成功還原 ${count} 筆紀錄！`, 'success');
-      goScreen('home'); // 回到首頁重新載入
+      goScreen('home'); 
       
     } catch(err) {
       console.error(err);
       toast('檔案解析失敗，請確認是否為系統匯出的 Excel 檔', 'error');
     }
     
-    event.target.value = ''; // 重置 input 以允許重複上傳相同檔案
+    event.target.value = ''; 
   };
   reader.readAsArrayBuffer(file);
 }
