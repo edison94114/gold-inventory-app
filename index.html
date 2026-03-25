@@ -13,6 +13,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -151,8 +152,9 @@
     .form-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
     .form-group { margin-bottom: 18px; }
     .form-label { font-size: 14px; color: var(--text2); margin-bottom: 8px; display: block; letter-spacing: 0.03em; font-weight: 500; }
-    .type-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-    .type-pill { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 9px; padding: 10px 4px; text-align: center; font-size: 13px; color: var(--text2); cursor: pointer; transition: all 0.15s; }
+    /* ★ 修正為可換行的 flex box，確保按鈕數量多時不會跑版 */
+    .type-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .type-pill { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 9px; padding: 10px 12px; text-align: center; font-size: 13px; color: var(--text2); cursor: pointer; transition: all 0.15s; flex-grow: 1; }
     .type-pill.active { background: #1c1600; border-color: var(--gold); color: var(--gold-light); font-weight: bold; }
     .dir-toggle { display: flex; background: var(--bg3); border-radius: 11px; overflow: hidden; border: 0.5px solid var(--border); }
     .dir-opt { flex: 1; padding: 12px; text-align: center; font-size: 15px; cursor: pointer; color: var(--text3); transition: all 0.15s; }
@@ -335,7 +337,7 @@
       </div>
       <div class="dash-scroll">
         <div class="backup-banner" id="backup-reminder">
-          <div class="backup-banner-text">💡 <b>溫馨提醒：</b>您有一段時間未備份資料，建議定期匯出 CSV 檔案以保全紀錄。</div>
+          <div class="backup-banner-text">💡 <b>溫馨提醒：</b>您有一段時間未備份資料，建議定期匯出 Excel 檔案以保全紀錄。</div>
           <button class="btn-backup" onclick="doExport()">立即匯出</button>
         </div>
 
@@ -381,6 +383,7 @@
 
         <div class="filter-bar" id="filter-bar">
           <div class="fpill active" onclick="setFilter('全部',this)">全部</div>
+          <div class="fpill" onclick="setFilter('期初設定',this)">期初設定</div>
           <div class="fpill" onclick="setFilter('一般進貨',this)">一般進貨</div>
           <div class="fpill" onclick="setFilter('一般銷售',this)">一般銷售</div>
           <div class="fpill" onclick="setFilter('舊金回收',this)">舊金回收</div>
@@ -418,6 +421,7 @@
         <div class="form-group">
           <label class="form-label">交易類別</label>
           <div class="type-grid">
+            <div class="type-pill" onclick="pickType('期初設定',this)">期初設定</div>
             <div class="type-pill active" onclick="pickType('一般進貨',this)">一般進貨</div>
             <div class="type-pill" onclick="pickType('一般銷售',this)">一般銷售</div>
             <div class="type-pill" onclick="pickType('舊金回收',this)">舊金回收</div>
@@ -514,9 +518,16 @@
           <div class="mi-arrow">›</div>
         </div>
         <div class="menu-item" onclick="doExport()">
-          <div class="mi-left"><div class="mi-icon" style="background:#1a1800;">📥</div><div class="mi-label">匯出交易紀錄（CSV）</div></div>
+          <div class="mi-left"><div class="mi-icon" style="background:#1a1800;">📥</div><div class="mi-label">匯出備份（原生 Excel 檔）</div></div>
           <div class="mi-arrow">›</div>
         </div>
+        
+        <input type="file" id="import-file" accept=".xlsx, .xls, .csv" style="display: none;" onchange="doImport(event)" />
+        <div class="menu-item" onclick="document.getElementById('import-file').click();">
+          <div class="mi-left"><div class="mi-icon" style="background:#2a1a0d;">📤</div><div class="mi-label">上傳還原紀錄 (Excel/CSV)</div></div>
+          <div class="mi-arrow">›</div>
+        </div>
+
         <div class="menu-item" onclick="showAbout()">
           <div class="mi-left"><div class="mi-icon" style="background:#0d1a2b;">ℹ️</div><div class="mi-label">關於此應用程式</div></div>
           <div class="mi-arrow">›</div>
@@ -583,7 +594,7 @@ let fState = { type: '一般進貨', wDir: '入庫', cDir: '支出', sync: false
 let unsubTx = null;
 let trendChart = null;
 let editingTxId = null;
-let lastScreen = 'home'; // 紀錄上一次的頁面，讓返回鍵能正常運作
+let lastScreen = 'home'; 
 
 // Auth listener
 auth.onAuthStateChanged(u => {
@@ -686,9 +697,8 @@ function goBackToList() {
   goScreen(lastScreen);
 }
 
-// ★ 顯示系統操作說明
 function showInstructions() {
-  alert('【系統操作說明】\n\n1. 新增交易：點擊下方「+」可新增進銷或核銷紀錄，支援修改時間補登。\n2. 重量連動：輸入公克/台錢/台兩/盎司任一欄位，系統將自動換算。\n3. 歷史紀錄：支援按分類篩選，點擊單筆紀錄可查看明細，亦可進行修改與刪除。\n4. 趨勢圖表：在「紀錄」頁面上方可展開庫存折線圖，掌握趨勢。\n5. 帳號與報表：在「帳號」頁面可查看每日結算報表，並匯出 CSV 檔備份。\n\n💡 建議定期前往帳號頁面匯出 CSV 檔案，以保障您的資料安全。');
+  alert('【系統操作說明】\n\n1. 新增交易：包含進銷與「期初設定」，支援修改時間補登。\n2. 重量連動：輸入任一單位，系統將自動精準換算。\n3. 歷史紀錄：點擊單筆紀錄可查看明細，亦可進行修改與刪除。\n4. 趨勢圖表：在「紀錄」頁面上方可展開庫存折線圖，掌握資金趨勢。\n5. 帳號與備份：強烈建議定期至「帳號」頁面匯出 Excel 備份，遇特殊狀況時也可重新上傳 Excel 還原資料。');
 }
 
 function txCol() { return db.collection('users').doc(user.uid).collection('transactions'); }
@@ -705,7 +715,6 @@ function subTx() {
   }, err => { console.error(err); });
 }
 
-// ★ 檢查備份橫幅邏輯
 function checkBackupReminder() {
   const lastBackup = localStorage.getItem('lastBackupDate');
   const now = Date.now();
@@ -873,7 +882,6 @@ function refreshDash() {
     ? recent.map(txCard).join('')
     : '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">尚無交易紀錄</div><div class="empty-sub">點下方「+」開始記錄</div></div>';
     
-  // 檢查是否需要跳出備份提醒
   checkBackupReminder();
 }
 
@@ -888,6 +896,7 @@ function txCard(tx) {
   else if (tx.type === '師傅領料') icon = '🔨';
   else if (tx.type === '成品繳庫') icon = '💎';
   else if (tx.type === '損耗核銷') icon = '📉';
+  else if (tx.type === '期初設定') icon = '📌'; // ★ 期初設定的 Icon
 
   let wStr = tx.mace > 0 ? ((isIn?'+':'-') + tx.mace.toFixed(3) + ' 錢') : '';
   let wCls = isIn ? 'in' : 'out';
@@ -1035,7 +1044,16 @@ function setFilter(f, el) {
   renderHistory();
 }
 
-const TYPE_MAP = { '一般進貨':{w:'入庫',c:'支出'},'舊金回收':{w:'入庫',c:'支出'},'成品繳庫':{w:'入庫',c:'支出'},'一般銷售':{w:'出庫',c:'收入'},'師傅領料':{w:'出庫',c:'支出'},'損耗核銷':{w:'出庫',c:'支出'} };
+// ★ 加入期初設定的對應邏輯 (預設為入庫與收入)
+const TYPE_MAP = { 
+  '期初設定':{w:'入庫',c:'收入'},
+  '一般進貨':{w:'入庫',c:'支出'},
+  '舊金回收':{w:'入庫',c:'支出'},
+  '成品繳庫':{w:'入庫',c:'支出'},
+  '一般銷售':{w:'出庫',c:'收入'},
+  '師傅領料':{w:'出庫',c:'支出'},
+  '損耗核銷':{w:'出庫',c:'支出'} 
+};
 
 function pickType(type, el) {
   document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active'));
@@ -1070,7 +1088,10 @@ function clearForm() {
   ['w-g','w-m','w-t','w-o','f-amount','f-price','f-target','f-note'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
   document.getElementById('f-datetime').value = getNowLocal(); 
   document.getElementById('f-err').textContent = '';
-  pickType('一般進貨', document.querySelector('.type-pill'));
+  // 預設跳回一般進貨
+  const pills = document.querySelectorAll('.type-pill');
+  let targetPill = pills[1]; // 一般進貨
+  pickType('一般進貨', targetPill);
 }
 
 const G_PER_M = 3.75, M_PER_T = 10, M_PER_OZ = 31.1034768/3.75;
@@ -1111,10 +1132,11 @@ function calcValue() {
   document.getElementById('cv-total').textContent = 'NT$ ' + total.toLocaleString();
 }
 
+// ★ 更新：使用 SheetJS 匯出正統 Excel (.xlsx) 以控制欄位寬度
 function doExport() {
   if (!allTx.length) { toast('尚無資料可匯出', 'error'); return; }
   
-  const h = ['交易序號', '交易日期', '交易類別', '出庫/入庫(台錢)', '出庫重量(台錢)', '入庫重量(台錢)', '庫存總重(台錢)', '出庫金額', '入庫金額', '結餘金額', '參考牌價', '交易對象', '備註', '是否為補登或修改'];
+  const h = ['交易序號', '交易日期', '交易類別', '出庫/入庫(台錢)', '出庫重量(台錢)', '入庫重量(台錢)', '庫存總重(台錢)', '出庫金額', '入庫金額', '結餘金額', '參考牌價', '交易對象', '備註', '狀態'];
   const sorted = [...allTx].sort((a,b)=>(a.timestamp?.seconds||0)-(b.timestamp?.seconds||0));
   
   let runW = 0; let runC = 0;
@@ -1126,7 +1148,7 @@ function doExport() {
     const inC = tx.cDir === '收入' ? (tx.amount || 0) : 0;
     const outC = tx.cDir === '支出' ? (tx.amount || 0) : 0;
     
-    let statusText = '';
+    let statusText = '正常';
     if(tx.isEdited) statusText = '修改';
     else if(tx.isBackdated) statusText = '補登';
 
@@ -1141,20 +1163,147 @@ function doExport() {
     ];
   });
   
-  const csv = '\uFEFF' + [h,...rows].map(r=>r.map(v=>`"${v!==undefined?v:''}"`).join(',')).join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
-  a.download = '貴金屬庫存紀錄_'+new Date().toISOString().slice(0,10)+'.csv';
-  a.click();
+  // 建立 SheetJS 的 Worksheet
+  const ws = XLSX.utils.aoa_to_sheet([h, ...rows]);
   
-  // ★ 更新最後備份時間並隱藏橫幅
+  // 設定 Excel 每個欄位的預設寬度 (wch = width in characters)
+  ws['!cols'] = [
+    { wch: 10 }, // 交易序號
+    { wch: 22 }, // 交易日期
+    { wch: 12 }, // 交易類別
+    { wch: 15 }, // 出庫/入庫
+    { wch: 15 }, // 出庫重量
+    { wch: 15 }, // 入庫重量
+    { wch: 18 }, // 庫存總重
+    { wch: 12 }, // 出庫金額
+    { wch: 12 }, // 入庫金額
+    { wch: 14 }, // 結餘金額
+    { wch: 12 }, // 參考牌價
+    { wch: 15 }, // 交易對象
+    { wch: 25 }, // 備註 (拉寬)
+    { wch: 10 }  // 狀態
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "庫存紀錄");
+  
+  // 匯出 .xlsx
+  XLSX.writeFile(wb, '貴金屬庫存紀錄_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  
   localStorage.setItem('lastBackupDate', Date.now());
   checkBackupReminder();
   
-  toast('CSV 報表已成功匯出！', 'success');
+  toast('Excel 報表已成功匯出！', 'success');
 }
 
-// ★ 更新免責聲明與贊助用語
+// ★ 新增：讀取 Excel/CSV 檔案並匯入還原至 Firebase
+async function doImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  // 讓使用者再次確認
+  if (!confirm('警告：此操作會將檔案內的紀錄「新增」至您目前的帳號中。\n若為還原空帳號則沒問題；若原本已有資料，可能會產生重複。\n確定要繼續匯入嗎？')) {
+    event.target.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      // 轉換成二維陣列
+      const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      
+      if (json.length < 2) {
+        toast('檔案無資料', 'error');
+        return;
+      }
+
+      toast('開始匯入，請稍候...', '');
+      
+      let count = 0;
+      const promises = [];
+      
+      // 從第二行開始讀取 (跳過標題)
+      for (let i = 1; i < json.length; i++) {
+        const row = json[i];
+        if (!row || row.length === 0) continue;
+        
+        // 欄位對應:
+        // 1: 交易日期 (YYYY/MM/DD HH:mm:ss)
+        // 2: 交易類別
+        // 4: 出庫重量
+        // 5: 入庫重量
+        // 7: 出庫金額
+        // 8: 入庫金額
+        // 10: 參考牌價
+        // 11: 交易對象
+        // 12: 備註
+        // 13: 狀態 (修改/補登)
+
+        const dateStr = row[1];
+        const type = row[2];
+        if(!dateStr || !type) continue; // 略過無效行
+        
+        // 處理時間格式
+        const txDate = new Date(dateStr.replace(/-/g, '/')); 
+        if (isNaN(txDate.getTime())) continue;
+
+        const outW = parseFloat(row[4]) || 0;
+        const inW = parseFloat(row[5]) || 0;
+        const mace = inW > 0 ? inW : outW;
+        const wDir = inW > 0 ? '入庫' : (outW > 0 ? '出庫' : '');
+        
+        const outC = parseInt(row[7]) || 0;
+        const inC = parseInt(row[8]) || 0;
+        const amount = inC > 0 ? inC : outC;
+        const cDir = inC > 0 ? '收入' : (outC > 0 ? '支出' : '');
+
+        const statusText = row[13] || '';
+        const isEdited = statusText === '修改';
+        const isBackdated = statusText === '補登';
+
+        const txData = {
+          timestamp: firebase.firestore.Timestamp.fromDate(txDate), 
+          date: txDate.toISOString(),
+          isBackdated: isBackdated,
+          isEdited: isEdited,
+          type: type,
+          wDir: wDir,
+          mace: mace,
+          gram: +(mace * 3.75).toFixed(3),
+          tael: +(mace / 10).toFixed(4),
+          oz: +(mace / 8.294).toFixed(4),
+          cDir: cDir,
+          amount: amount,
+          price: parseInt(row[10]) || 0,
+          target: row[11] || '',
+          note: row[12] || ''
+        };
+        
+        // 將寫入指令存入陣列
+        promises.push(txCol().add(txData));
+        count++;
+      }
+      
+      // 等待所有資料批次寫入完成
+      await Promise.all(promises);
+      toast(`成功還原 ${count} 筆紀錄！`, 'success');
+      goScreen('home'); // 回到首頁重新載入
+      
+    } catch(err) {
+      console.error(err);
+      toast('檔案解析失敗，請確認是否為系統匯出的 Excel 檔', 'error');
+    }
+    
+    event.target.value = ''; // 重置 input 以允許重複上傳相同檔案
+  };
+  reader.readAsArrayBuffer(file);
+}
+
 function showAbout() {
   alert('貴金屬出入庫存系統 v1.0.0\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
