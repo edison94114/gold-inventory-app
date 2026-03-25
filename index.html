@@ -428,7 +428,7 @@
 
     <div id="screen-converter" class="screen">
       <div class="app-header">
-        <span class="header-title">重量換算</span>
+        <span class="header-title">重量換算與市值</span>
         <div style="width:35px;"></div>
       </div>
       <div class="conv-scroll">
@@ -440,6 +440,19 @@
           <div class="conv-row"><div class="conv-row-label">盎司 (troy oz)</div><input class="conv-input" type="number" inputmode="decimal" id="cv-o" placeholder="0" oninput="syncCV('o')"/></div>
           <div class="conv-row"><div class="conv-row-label">公斤 (kg)</div><input class="conv-input" type="number" inputmode="decimal" id="cv-k" placeholder="0" oninput="syncCV('k')"/></div>
         </div>
+        
+        <div class="conv-card">
+          <div class="conv-card-title">市值預估計算器</div>
+          <div class="conv-row">
+            <div class="conv-row-label">每錢牌價 (NT$)</div>
+            <input class="conv-input hl" type="number" inputmode="numeric" id="cv-price" placeholder="例如：9500" oninput="calcValue()"/>
+          </div>
+          <div class="conv-row" style="margin-top: 16px; padding-top: 14px; border-top: 0.5px solid var(--border);">
+            <div class="conv-row-label">預估總市值</div>
+            <div style="font-size: 26px; font-weight: bold; color: var(--green);" id="cv-total">NT$ 0</div>
+          </div>
+        </div>
+
         <div class="price-links">
           <div class="price-links-title">即時金價參考</div>
           <div class="link-row">
@@ -484,7 +497,7 @@
         <div style="width:60px;"></div>
       </div>
       <div class="daily-scroll" id="daily-list">
-        </div>
+      </div>
     </div>
 
     <nav class="bottom-nav">
@@ -534,7 +547,7 @@ let curFilter = '全部';
 let fState = { type: '一般進貨', wDir: '入庫', cDir: '支出', sync: false };
 let unsubTx = null;
 let trendChart = null;
-let editingTxId = null; // ★ 紀錄目前正在修改的 ID
+let editingTxId = null;
 
 // Auth listener
 auth.onAuthStateChanged(u => {
@@ -619,7 +632,6 @@ function goScreen(name) {
 
   if (name==='history') {
     renderHistory();
-    // 切換時如果圖表開著，要重繪
     if(document.getElementById('chart-wrap').style.display === 'block') drawChart();
   }
   if (name==='add' && !editingTxId) clearForm(); 
@@ -635,13 +647,11 @@ function subTx() {
     refreshDash();
     renderHistory();
     
-    // 即時更新圖表與日結
     if(document.getElementById('chart-wrap').style.display === 'block') drawChart();
     if(document.getElementById('screen-daily').classList.contains('active')) renderDailySummary();
   }, err => { console.error(err); });
 }
 
-// ★ 更新的表單送出邏輯 (包含修改覆寫)
 async function doSubmit() {
   const mace = parseFloat(document.getElementById('w-m').value) || 0;
   const amount = parseInt(document.getElementById('f-amount').value) || 0;
@@ -660,6 +670,7 @@ async function doSubmit() {
     timestamp: firebase.firestore.Timestamp.fromDate(txDate), 
     date: txDate.toISOString(),
     isBackdated: isBackdated,
+    isEdited: !!editingTxId, // ★ 標記此筆資料是被修改過的
     type: fState.type,
     wDir: mace > 0 ? fState.wDir : '',
     mace: mace > 0 ? +mace.toFixed(3) : 0,
@@ -675,16 +686,14 @@ async function doSubmit() {
 
   try {
     if (editingTxId) {
-      // 覆寫現有紀錄
       await txCol().doc(editingTxId).update(txData);
       toast('紀錄修改成功！', 'success');
     } else {
-      // 新增紀錄
       await txCol().add(txData);
       toast('交易已成功寫入！', 'success');
     }
-    clearForm(); // 清空並重置狀態
-    goScreen('history'); // 修改完切換到歷史紀錄看結果
+    clearForm(); 
+    goScreen('history'); 
   } catch(err) { errEl.textContent = '寫入失敗：' + err.message; }
   finally { btn.disabled = false; btn.textContent = '確認寫入紀錄'; }
 }
@@ -699,41 +708,36 @@ async function deleteTx(id) {
   }
 }
 
-// ★ 新增：修改資料函式 (帶入表單)
 function editTx(id) {
   const tx = allTx.find(t => t.id === id);
   if (!tx) return;
   
-  editingTxId = id; // 設定全域變數
+  editingTxId = id; 
   document.getElementById('form-top-title').textContent = '修改交易紀錄';
   document.getElementById('submit-btn').textContent = '💾 儲存修改內容';
   
-  // 找尋對應的 Type 並點擊
   const pills = document.querySelectorAll('.type-pill');
   let targetPill = pills[0];
   pills.forEach(p => { if (p.textContent === tx.type) targetPill = p; });
   pickType(tx.type || '一般進貨', targetPill);
   
-  // 手動覆寫重量/現金方向 (因為 pickType 可能會洗掉客製化方向)
   if(tx.wDir) setWDir(tx.wDir);
   if(tx.cDir) setCDir(tx.cDir);
 
-  // 帶入時間
   if(tx.date) {
     const d = new Date(tx.date);
     const tzoffset = d.getTimezoneOffset() * 60000;
     document.getElementById('f-datetime').value = new Date(d.getTime() - tzoffset).toISOString().slice(0, 16);
   }
 
-  // 帶入各欄位值
   document.getElementById('w-m').value = tx.mace || '';
-  syncW('m'); // 觸發換算
+  syncW('m'); 
   document.getElementById('f-amount').value = tx.amount || '';
   document.getElementById('f-price').value = tx.price || '';
   document.getElementById('f-target').value = tx.target || '';
   document.getElementById('f-note').value = tx.note || '';
 
-  goScreen('add'); // 跳轉過去
+  goScreen('add'); 
 }
 
 function refreshDash() {
@@ -747,7 +751,6 @@ function refreshDash() {
   });
   
   document.getElementById('s-weight').textContent = totW.toFixed(3);
-  // ★ 修改：顯示台兩與g
   document.getElementById('s-weight-sub').textContent = `約 ${(totW/10).toFixed(4)} 兩 │ ${(totW*3.75).toFixed(3)} g`;
   document.getElementById('s-balance').textContent = 'NT$' + totC.toLocaleString();
   
@@ -776,7 +779,6 @@ function txCard(tx) {
   const isIn = tx.wDir==='入庫';
   const isOut = tx.wDir==='出庫';
   
-  // ★ 修改：依據類別換成直覺 Icon
   let icon = '◎';
   if (tx.type === '一般進貨') icon = '📦';
   else if (tx.type === '一般銷售') icon = '💰';
@@ -785,19 +787,26 @@ function txCard(tx) {
   else if (tx.type === '成品繳庫') icon = '💎';
   else if (tx.type === '損耗核銷') icon = '📉';
 
-  // ★ 修改：雙重數值顯示 (重量 + 金額)
   let wStr = tx.mace > 0 ? ((isIn?'+':'-') + tx.mace.toFixed(3) + ' 錢') : '';
   let wCls = isIn ? 'in' : 'out';
   let cStr = tx.amount > 0 ? ((tx.cDir==='收入'?'+':'-') + 'NT$' + tx.amount.toLocaleString()) : '';
   let cCls = tx.cDir === '收入' ? 'in' : 'out';
 
   const dateStr = tx.date ? new Date(tx.date).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
-  const backdateBadge = tx.isBackdated ? '<span style="color:var(--red); font-weight:bold; margin-right:4px;">(補登)</span>' : '';
-  const meta = backdateBadge + [dateStr, tx.target].filter(Boolean).join(' · ');
+  
+  // ★ 修改與補登的標籤判斷 (優先顯示修改，若為純補登則顯示補登)
+  let badgeStr = '';
+  if (tx.isEdited) {
+    badgeStr = '<span style="font-size:12px; color:#ffffff; font-weight:normal; margin-left:6px;">(修改)</span>';
+  } else if (tx.isBackdated) {
+    badgeStr = '<span style="font-size:12px; color:#ffffff; font-weight:normal; margin-left:6px;">(補登)</span>';
+  }
+  
+  const meta = [dateStr, tx.target].filter(Boolean).join(' · ');
   
   return `<div class="tx-item">
             <div class="tx-dot">${icon}</div>
-            <div class="tx-info"><div class="tx-type">${tx.type}</div><div class="tx-meta">${meta||'無備註'}</div></div>
+            <div class="tx-info"><div class="tx-type">${tx.type}${badgeStr}</div><div class="tx-meta">${meta||'無備註'}</div></div>
             <div class="tx-right">
               ${wStr ? `<div class="tx-wt ${wCls}">${wStr}</div>` : ''}
               ${cStr ? `<div class="tx-amt ${cCls}">${cStr}</div>` : ''}
@@ -810,7 +819,6 @@ function txCard(tx) {
           </div>`;
 }
 
-// ★ Chart.js 畫圖控制邏輯
 function toggleChart() {
   const wrap = document.getElementById('chart-wrap');
   if (wrap.style.display === 'none' || wrap.style.display === '') {
@@ -826,7 +834,6 @@ function drawChart() {
   if (trendChart) trendChart.destroy();
   if (allTx.length === 0) return;
 
-  // 整理出每天的「結餘累積總量」
   const sorted = [...allTx].sort((a,b)=>(a.timestamp?.seconds||0)-(b.timestamp?.seconds||0));
   let runW = 0;
   const dailyData = {};
@@ -836,13 +843,12 @@ function drawChart() {
     if(!date) return;
     if(tx.wDir === '入庫') runW += tx.mace || 0;
     if(tx.wDir === '出庫') runW -= tx.mace || 0;
-    dailyData[date] = runW; // 同一天後面的交易會覆寫前面的，最終留下每日最終庫存
+    dailyData[date] = runW; 
   });
 
   const labels = Object.keys(dailyData);
   const data = Object.values(dailyData);
 
-  // 套用 Chart.js
   Chart.defaults.color = '#e0e0e0';
   Chart.defaults.font.family = '-apple-system, sans-serif';
   trendChart = new Chart(ctx, {
@@ -956,12 +962,12 @@ function getNowLocal() {
 }
 
 function clearForm() {
-  editingTxId = null; // 清除編輯狀態
+  editingTxId = null; 
   document.getElementById('form-top-title').textContent = '新增交易';
   document.getElementById('submit-btn').textContent = '確認寫入紀錄';
 
   ['w-g','w-m','w-t','w-o','f-amount','f-price','f-target','f-note'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
-  document.getElementById('f-datetime').value = getNowLocal();
+  document.getElementById('f-datetime').value = getNowLocal(); 
   document.getElementById('f-err').textContent = '';
   pickType('一般進貨', document.querySelector('.type-pill'));
 }
@@ -994,12 +1000,23 @@ function syncCV(src) {
     if(src!=='k') document.getElementById('cv-k').value = +(m*G_PER_M/1000).toFixed(6);
   }
   fState.sync = false;
+  
+  // ★ 觸發市值計算
+  calcValue();
+}
+
+// ★ 新增：計算總市值
+function calcValue() {
+  const mace = parseFloat(document.getElementById('cv-m').value) || 0;
+  const price = parseFloat(document.getElementById('cv-price').value) || 0;
+  const total = Math.round(mace * price); // 四捨五入到整數
+  document.getElementById('cv-total').textContent = 'NT$ ' + total.toLocaleString();
 }
 
 function doExport() {
   if (!allTx.length) { toast('尚無資料可匯出', 'error'); return; }
   
-  const h = ['交易序號', '交易日期', '交易類別', '出庫/入庫(台錢)', '出庫重量(台錢)', '入庫重量(台錢)', '庫存總重(台錢)', '出庫金額', '入庫金額', '結餘金額', '參考牌價', '交易對象', '備註', '是否為補登'];
+  const h = ['交易序號', '交易日期', '交易類別', '出庫/入庫(台錢)', '出庫重量(台錢)', '入庫重量(台錢)', '庫存總重(台錢)', '出庫金額', '入庫金額', '結餘金額', '參考牌價', '交易對象', '備註', '是否為補登或修改'];
   const sorted = [...allTx].sort((a,b)=>(a.timestamp?.seconds||0)-(b.timestamp?.seconds||0));
   
   let runW = 0; let runC = 0;
@@ -1010,7 +1027,10 @@ function doExport() {
     const outW = tx.wDir === '出庫' ? (tx.mace || 0) : 0;
     const inC = tx.cDir === '收入' ? (tx.amount || 0) : 0;
     const outC = tx.cDir === '支出' ? (tx.amount || 0) : 0;
-    const isBkd = tx.isBackdated ? '是' : '';
+    
+    let statusText = '';
+    if(tx.isEdited) statusText = '修改';
+    else if(tx.isBackdated) statusText = '補登';
 
     runW = runW + inW - outW;
     runC = runC + inC - outC;
@@ -1019,7 +1039,7 @@ function doExport() {
       index + 1, dateStr, tx.type || '', tx.wDir || '', 
       outW > 0 ? outW : '', inW > 0 ? inW : '', runW.toFixed(3), 
       outC > 0 ? outC : '', inC > 0 ? inC : '', runC, 
-      tx.price || '', tx.target || '', tx.note || '', isBkd
+      tx.price || '', tx.target || '', tx.note || '', statusText
     ];
   });
   
@@ -1031,8 +1051,9 @@ function doExport() {
   toast('CSV 報表已成功匯出！', 'success');
 }
 
+// ★ 修改：加入免責聲明與贊助用語
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.0.0\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.0.0\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
