@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="黃金庫存">
+  <meta name="theme-color" content="#0d0d0d">
+  <title>黃金庫存管理</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold: #c9a84c; --gold-light: #f0d78c; --gold-dark: #8a6a00;
+      --bg: #0d0d0d; --bg2: #161616; --bg3: #1f1f1f; --bg4: #2a2a2a;
+      --text: #f0f0f0; --text2: #aaaaaa; --text3: #666666;
+      --green: #4ecb71; --green-bg: #0a2416; --red: #e56b4e; --red-bg: #2b0d0d;
+      --border: #2a2a2a;
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, 'PingFang TC', 'Microsoft JhengHei', sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+    #app { max-width: 430px; margin: 0 auto; min-height: 100vh; background: var(--bg); position: relative; }
+
+    /* Loading */
+    #loading { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
+    .loading-dots { display: flex; gap: 6px; margin-top: 24px; }
+    .loading-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); animation: ldot 1.2s infinite ease-in-out; }
+    .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes ldot { 0%,80%,100% { transform: scale(0.5); opacity: 0.3; } 40% { transform: scale(1); opacity: 1; } }
+
+    /* LBMA Gold Bar Logo */
+    .logo-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .lbma-bar { position: relative; width: 72px; height: 50px; }
+    .lbma-bar svg { width: 100%; height: 100%; }
+    .logo-inventory-text { font-size: 12px; color: var(--gold); letter-spacing: 0.2em; font-weight: 500; text-transform: uppercase; }
+    .logo-app-title { font-size: 17px; color: var(--gold-light); font-weight: 500; margin-top: 2px; }
+
+    /* Screens */
+    .screen { display: none; flex-direction: column; min-height: 100vh; padding-bottom: calc(72px + var(--sab)); }
+    .screen.active { display: flex; }
+    .screen.no-nav { padding-bottom: 0; min-height: 100vh; }
+
+    /* Auth */
+    #auth-screen { background: var(--bg); }
+    .auth-hero { background: linear-gradient(180deg, #1c1600 0%, var(--bg) 100%); padding: calc(56px + var(--sat)) 24px 36px; display: flex; flex-direction: column; align-items: center; }
+    .auth-form { padding: 0 24px 48px; flex: 1; }
+    .auth-tabs { display: flex; background: var(--bg3); border-radius: 12px; padding: 3px; margin-bottom: 22px; }
+    .auth-tab { flex: 1; padding: 10px; text-align: center; font-size: 15px; border-radius: 10px; cursor: pointer; color: var(--text2); transition: all 0.2s; }
+    .auth-tab.active { background: var(--gold); color: #1a1200; font-weight: 500; }
+    .input-group { margin-bottom: 14px; }
+    .input-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; display: block; }
+    .input-field { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 11px; padding: 14px; color: var(--text); font-size: 15px; outline: none; transition: border-color 0.2s; font-family: inherit; -webkit-appearance: none; }
+    .input-field:focus { border-color: var(--gold); }
+    .btn-primary { width: 100%; background: linear-gradient(135deg, #c9a84c, #e8c96a); border: none; border-radius: 12px; padding: 15px; color: #1a1200; font-size: 16px; font-weight: 500; cursor: pointer; font-family: inherit; transition: opacity 0.2s; -webkit-appearance: none; display: block; }
+    .btn-primary:active { opacity: 0.8; }
+    .btn-primary:disabled { opacity: 0.5; }
+    .divider-or { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
+    .divider-or::before, .divider-or::after { content: ''; flex: 1; height: 0.5px; background: var(--border); }
+    .divider-or span { font-size: 12px; color: var(--text3); }
+    .btn-google { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 12px; padding: 14px; color: var(--text); font-size: 15px; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 10px; -webkit-appearance: none; }
+    .btn-google:active { background: var(--bg4); }
+    .auth-error { color: var(--red); font-size: 13px; text-align: center; margin-top: 10px; min-height: 18px; line-height: 1.4; }
+
+    /* App Header */
+    .app-header { background: var(--bg); padding: calc(var(--sat) + 10px) 16px 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid var(--border); position: sticky; top: 0; z-index: 10; }
+    .header-logo-mini { display: flex; align-items: center; gap: 8px; }
+    .header-lbma { width: 38px; height: 26px; }
+    .header-lbma svg { width: 100%; height: 100%; }
+    .header-title { font-size: 16px; color: var(--gold-light); font-weight: 500; }
+    .header-avatar { width: 33px; height: 33px; border-radius: 50%; background: #2a1f00; border: 1.5px solid var(--gold); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; color: var(--gold); cursor: pointer; flex-shrink: 0; }
+
+    /* Bottom Nav */
+    .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; background: #080808; border-top: 1px solid #333; padding: 6px 0 calc(6px + var(--sab)); display: flex; z-index: 20; }
+    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 4px 0; }
+    .nav-icon { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+    .nav-label { font-size: 10px; color: #444; font-weight: 500; transition: color 0.15s; }
+    .nav-btn.active .nav-label { color: var(--gold); }
+    .nav-icon-svg { transition: stroke 0.15s; }
+    .nav-btn .nav-icon-svg { stroke: #444; }
+    .nav-btn.active .nav-icon-svg { stroke: var(--gold); }
+    .nav-add-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 0; }
+    .nav-add-btn { width: 54px; height: 54px; border-radius: 50%; background: linear-gradient(135deg, #c9a84c, #f0d78c); display: flex; align-items: center; justify-content: center; position: relative; top: -18px; box-shadow: 0 4px 20px rgba(201,168,76,0.45); }
+    .nav-add-label { font-size: 10px; color: var(--gold); font-weight: 500; margin-top: -14px; }
+
+    /* Dashboard */
+    .dash-scroll { overflow-y: auto; flex: 1; padding: 14px 14px 0; -webkit-overflow-scrolling: touch; }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .stat-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 14px; padding: 14px 13px; }
+    .stat-card.gold-card { border-color: rgba(201,168,76,0.3); background: #161200; }
+    .stat-card.green-card { border-color: rgba(78,203,113,0.25); background: #0a1a0f; }
+    .stat-label { font-size: 11px; color: var(--text3); margin-bottom: 7px; }
+    .stat-val { font-size: 20px; font-weight: 500; color: var(--gold-light); line-height: 1.1; word-break: break-all; }
+    .stat-val.gv { color: var(--green); }
+    .stat-unit { font-size: 10px; color: var(--text3); margin-top: 5px; }
+    .today-card { background: #141200; border: 0.5px solid rgba(201,168,76,0.2); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+    .today-title { font-size: 10px; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
+    .today-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; }
+    .today-item { text-align: center; padding: 0 4px; }
+    .today-item + .today-item { border-left: 0.5px solid var(--border); }
+    .ti-label { font-size: 10px; color: var(--text3); margin-bottom: 4px; }
+    .ti-val { font-size: 12px; font-weight: 500; }
+    .ti-val.in { color: var(--green); }
+    .ti-val.out { color: var(--red); }
+    .sec-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .sec-title { font-size: 13px; color: var(--text2); font-weight: 500; }
+    .sec-more { font-size: 12px; color: var(--gold); cursor: pointer; }
+    .tx-item { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 11px 13px; display: flex; align-items: center; gap: 11px; margin-bottom: 8px; }
+    .tx-dot { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+    .tx-dot.in { background: var(--green-bg); }
+    .tx-dot.out { background: var(--red-bg); }
+    .tx-dot.neutral { background: var(--bg3); }
+    .tx-info { flex: 1; min-width: 0; }
+    .tx-type { font-size: 13px; font-weight: 500; color: var(--text); }
+    .tx-meta { font-size: 11px; color: var(--text3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tx-right { text-align: right; flex-shrink: 0; }
+    .tx-wt { font-size: 13px; font-weight: 500; }
+    .tx-wt.in { color: var(--green); }
+    .tx-wt.out { color: var(--red); }
+    .tx-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .empty-state { text-align: center; padding: 52px 20px; }
+    .empty-icon { font-size: 44px; margin-bottom: 14px; }
+    .empty-text { font-size: 15px; color: var(--text2); }
+    .empty-sub { font-size: 13px; color: var(--text3); margin-top: 6px; }
+
+    /* Form */
+    .form-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { font-size: 12px; color: var(--text2); margin-bottom: 8px; display: block; letter-spacing: 0.03em; }
+    .type-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+    .type-pill { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 9px; padding: 9px 4px; text-align: center; font-size: 12px; color: var(--text2); cursor: pointer; transition: all 0.15s; }
+    .type-pill.active { background: #1c1600; border-color: var(--gold); color: var(--gold-light); }
+    .dir-toggle { display: flex; background: var(--bg3); border-radius: 11px; overflow: hidden; border: 0.5px solid var(--border); }
+    .dir-opt { flex: 1; padding: 12px; text-align: center; font-size: 14px; cursor: pointer; color: var(--text3); transition: all 0.15s; }
+    .dir-opt.in-active { background: var(--green-bg); color: var(--green); }
+    .dir-opt.out-active { background: var(--red-bg); color: var(--red); }
+    .weight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .wf { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 11px; padding: 10px 13px; transition: border-color 0.15s; }
+    .wf.hl { border-color: var(--gold); background: #1c1600; }
+    .wf-label { font-size: 10px; color: var(--text3); margin-bottom: 5px; }
+    .wf.hl .wf-label { color: var(--gold-dark); }
+    .wf-input { background: transparent; border: none; outline: none; color: var(--text); font-size: 16px; font-weight: 500; width: 100%; font-family: inherit; }
+    .wf.hl .wf-input { color: var(--gold-light); }
+    .form-error { color: var(--red); font-size: 12px; margin-top: 4px; min-height: 18px; }
+    .btn-row { display: flex; gap: 10px; margin-top: 8px; padding-bottom: 16px; }
+    .btn-clear { background: var(--bg3); color: var(--text2); border: 0.5px solid var(--border); border-radius: 12px; padding: 14px; font-size: 15px; cursor: pointer; font-family: inherit; flex: 0 0 80px; -webkit-appearance: none; }
+
+    /* History */
+    .history-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
+    .filter-bar { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .filter-bar::-webkit-scrollbar { display: none; }
+    .fpill { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12px; color: var(--text2); cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+    .fpill.active { background: #1c1600; border-color: var(--gold); color: var(--gold-light); }
+
+    /* Converter */
+    .conv-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
+    .conv-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+    .conv-card-title { font-size: 13px; color: var(--gold); margin-bottom: 14px; font-weight: 500; }
+    .conv-row { margin-bottom: 12px; }
+    .conv-row-label { font-size: 11px; color: var(--text3); margin-bottom: 5px; }
+    .conv-input { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 9px; padding: 11px 13px; color: var(--text); font-size: 16px; font-weight: 500; outline: none; font-family: inherit; -webkit-appearance: none; transition: border-color 0.15s; }
+    .conv-input:focus { border-color: var(--gold); }
+    .conv-input.hl { border-color: var(--gold); background: #1c1600; color: var(--gold-light); }
+    .price-links { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 14px; padding: 14px; }
+    .price-links-title { font-size: 12px; color: var(--text3); margin-bottom: 10px; }
+    .link-row { display: flex; gap: 10px; }
+    .link-btn { flex: 1; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 8px; text-align: center; font-size: 13px; color: var(--gold); text-decoration: none; display: block; }
+    .link-btn:active { background: var(--bg4); }
+
+    /* Profile */
+    .profile-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
+    .profile-hero { text-align: center; padding: 24px 0 22px; }
+    .profile-avatar-big { width: 74px; height: 74px; border-radius: 50%; background: #2a1f00; border: 2px solid var(--gold); display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 500; color: var(--gold); margin: 0 auto 12px; }
+    .profile-name { font-size: 18px; color: var(--text); font-weight: 500; }
+    .profile-email { font-size: 13px; color: var(--text3); margin-top: 4px; }
+    .menu-item { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+    .menu-item:active { background: var(--bg3); }
+    .mi-left { display: flex; align-items: center; gap: 12px; }
+    .mi-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; }
+    .mi-label { font-size: 14px; color: var(--text); }
+    .mi-arrow { color: var(--text3); font-size: 18px; }
+    .btn-logout { width: 100%; background: var(--red-bg); border: 1px solid rgba(229,107,78,0.4); border-radius: 12px; padding: 15px; color: var(--red); font-size: 15px; cursor: pointer; font-family: inherit; margin-top: 6px; -webkit-appearance: none; }
+    .btn-logout:active { opacity: 0.7; }
+
+    /* Toast */
+    #toast { position: fixed; bottom: calc(82px + var(--sab)); left: 50%; transform: translateX(-50%) translateY(16px); background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px; padding: 10px 20px; font-size: 13px; color: var(--text); opacity: 0; transition: all 0.25s; z-index: 99; white-space: nowrap; pointer-events: none; }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.success { border-color: var(--green); color: var(--green); }
+    #toast.error { border-color: var(--red); color: var(--red); }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Loading -->
+  <div id="loading">
+    <div class="logo-wrap">
+      <div class="lbma-bar">
+        <svg viewBox="0 0 72 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="gbar" x1="0" y1="0" x2="72" y2="50" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#a07830"/>
+              <stop offset="35%" stop-color="#f0d78c"/>
+              <stop offset="65%" stop-color="#c9a84c"/>
+              <stop offset="100%" stop-color="#8a6a00"/>
+            </linearGradient>
+            <linearGradient id="ginner" x1="0" y1="0" x2="60" y2="40" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#8a6a00"/>
+              <stop offset="50%" stop-color="#c9a84c"/>
+              <stop offset="100%" stop-color="#6a5000"/>
+            </linearGradient>
+          </defs>
+          <polygon points="6,0 66,0 72,50 0,50" fill="url(#gbar)"/>
+          <polygon points="11,6 61,6 66,44 6,44" fill="url(#ginner)"/>
+          <text x="36" y="22" text-anchor="middle" fill="#f0d78c" font-size="9" font-family="serif" font-weight="bold" letter-spacing="1">GOLD</text>
+          <text x="36" y="35" text-anchor="middle" fill="#c9a84c" font-size="7.5" font-family="sans-serif" letter-spacing="0.5">999.9</text>
+          <line x1="8" y1="27" x2="64" y2="27" stroke="#c9a84c" stroke-width="0.4" opacity="0.4"/>
+        </svg>
+      </div>
+      <div class="logo-inventory-text">Inventory</div>
+      <div class="logo-app-title">黃金庫存管理系統</div>
+    </div>
+    <div class="loading-dots"><span></span><span></span><span></span></div>
+  </div>
+
+  <!-- Auth Screen -->
+  <div id="auth-screen" class="screen no-nav">
+    <div class="auth-hero">
+      <div class="logo-wrap">
+        <div class="lbma-bar">
+          <svg viewBox="0 0 72 50" fill="none">
+            <defs>
+              <linearGradient id="g2" x1="0" y1="0" x2="72" y2="50" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#a07830"/><stop offset="35%" stop-color="#f0d78c"/><stop offset="65%" stop-color="#c9a84c"/><stop offset="100%" stop-color="#8a6a00"/></linearGradient>
+              <linearGradient id="g2i" x1="0" y1="0" x2="60" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#8a6a00"/><stop offset="50%" stop-color="#c9a84c"/><stop offset="100%" stop-color="#6a5000"/></linearGradient>
+            </defs>
+            <polygon points="6,0 66,0 72,50 0,50" fill="url(#g2)"/>
+            <polygon points="11,6 61,6 66,44 6,44" fill="url(#g2i)"/>
+            <text x="36" y="22" text-anchor="middle" fill="#f0d78c" font-size="9" font-family="serif" font-weight="bold" letter-spacing="1">GOLD</text>
+            <text x="36" y="35" text-anchor="middle" fill="#c9a84c" font-size="7.5" font-family="sans-serif" letter-spacing="0.5">999.9</text>
+            <line x1="8" y1="27" x2="64" y2="27" stroke="#c9a84c" stroke-width="0.4" opacity="0.4"/>
+          </svg>
+        </div>
+        <div class="logo-inventory-text">Inventory</div>
+        <div class="logo-app-title">黃金庫存管理系統</div>
+      </div>
+    </div>
+    <div class="auth-form">
+      <div class="auth-tabs">
+        <div class="auth-tab active" onclick="switchAuthTab('login')">登入</div>
+        <div class="auth-tab" onclick="switchAuthTab('register')">註冊新帳號</div>
+      </div>
+      <div id="login-form">
+        <div class="input-group"><label class="input-label">電子郵件</label><input type="email" class="input-field" id="login-email" placeholder="your@email.com" autocomplete="email"/></div>
+        <div class="input-group"><label class="input-label">密碼</label><input type="password" class="input-field" id="login-pwd" placeholder="••••••••" autocomplete="current-password"/></div>
+        <button class="btn-primary" onclick="doLogin()">登入</button>
+        <div class="divider-or"><span>或</span></div>
+        <button class="btn-google" onclick="doGoogleLogin()">
+          <svg width="20" height="20" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66 2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          使用 Google 帳號登入
+        </button>
+        <div class="auth-error" id="login-err"></div>
+      </div>
+      <div id="register-form" style="display:none;">
+        <div class="input-group"><label class="input-label">電子郵件</label><input type="email" class="input-field" id="reg-email" placeholder="your@email.com" autocomplete="email"/></div>
+        <div class="input-group"><label class="input-label">密碼（至少 6 位）</label><input type="password" class="input-field" id="reg-pwd" placeholder="••••••••" autocomplete="new-password"/></div>
+        <div class="input-group"><label class="input-label">確認密碼</label><input type="password" class="input-field" id="reg-pwd2" placeholder="••••••••" autocomplete="new-password"/></div>
+        <button class="btn-primary" onclick="doRegister()">建立帳號</button>
+        <div class="divider-or"><span>或</span></div>
+        <button class="btn-google" onclick="doGoogleLogin()">
+          <svg width="20" height="20" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66 2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          使用 Google 帳號註冊
+        </button>
+        <div class="auth-error" id="reg-err"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="main-app" style="display:none;">
+
+    <!-- Home/Dashboard -->
+    <div id="screen-home" class="screen active">
+      <div class="app-header">
+        <div class="header-logo-mini">
+          <div class="header-lbma">
+            <svg viewBox="0 0 72 50" fill="none">
+              <defs><linearGradient id="gh" x1="0" y1="0" x2="72" y2="50" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#a07830"/><stop offset="40%" stop-color="#f0d78c"/><stop offset="100%" stop-color="#8a6a00"/></linearGradient><linearGradient id="ghi" x1="0" y1="0" x2="60" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7a5800"/><stop offset="50%" stop-color="#c9a84c"/><stop offset="100%" stop-color="#5a4000"/></linearGradient></defs>
+              <polygon points="6,0 66,0 72,50 0,50" fill="url(#gh)"/>
+              <polygon points="11,6 61,6 66,44 6,44" fill="url(#ghi)"/>
+              <text x="36" y="22" text-anchor="middle" fill="#f0d78c" font-size="9" font-family="serif" font-weight="bold" letter-spacing="0.5">GOLD</text>
+              <text x="36" y="34" text-anchor="middle" fill="#c9a84c" font-size="7" font-family="sans-serif">999.9</text>
+            </svg>
+          </div>
+          <span class="header-title">Inventory</span>
+        </div>
+        <div class="header-avatar" id="hdr-avatar" onclick="goScreen('profile')">G</div>
+      </div>
+      <div class="dash-scroll">
+        <div class="stat-grid">
+          <div class="stat-card gold-card">
+            <div class="stat-label">總庫存重量</div>
+            <div class="stat-val" id="s-weight">0.000</div>
+            <div class="stat-unit" id="s-weight-sub">台錢 ≈ 0.000g</div>
+          </div>
+          <div class="stat-card green-card">
+            <div class="stat-label">結餘金額</div>
+            <div class="stat-val gv" id="s-balance">NT$0</div>
+            <div class="stat-unit">&nbsp;</div>
+          </div>
+        </div>
+        <div class="today-card">
+          <div class="today-title">今日概況</div>
+          <div class="today-grid">
+            <div class="today-item"><div class="ti-label">入庫(錢)</div><div class="ti-val in" id="td-inw">+0</div></div>
+            <div class="today-item"><div class="ti-label">出庫(錢)</div><div class="ti-val out" id="td-outw">-0</div></div>
+            <div class="today-item"><div class="ti-label">收入(元)</div><div class="ti-val in" id="td-inc">+0</div></div>
+            <div class="today-item"><div class="ti-label">支出(元)</div><div class="ti-val out" id="td-outc">-0</div></div>
+          </div>
+        </div>
+        <div class="sec-header">
+          <div class="sec-title">近期交易</div>
+          <div class="sec-more" onclick="goScreen('history')">查看全部 ›</div>
+        </div>
+        <div id="recent-list"><div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">尚無交易紀錄</div><div class="empty-sub">點下方「+」開始記錄</div></div></div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div id="screen-history" class="screen">
+      <div class="app-header">
+        <span class="header-title">交易紀錄</span>
+        <div style="width:33px;"></div>
+      </div>
+      <div class="history-scroll">
+        <div class="filter-bar" id="filter-bar">
+          <div class="fpill active" onclick="setFilter('全部',this)">全部</div>
+          <div class="fpill" onclick="setFilter('一般進貨',this)">一般進貨</div>
+          <div class="fpill" onclick="setFilter('一般銷售',this)">一般銷售</div>
+          <div class="fpill" onclick="setFilter('舊金回收',this)">舊金回收</div>
+          <div class="fpill" onclick="setFilter('師傅領料',this)">師傅領料</div>
+          <div class="fpill" onclick="setFilter('成品繳庫',this)">成品繳庫</div>
+          <div class="fpill" onclick="setFilter('損耗核銷',this)">損耗核銷</div>
+        </div>
+        <div id="history-list"></div>
+      </div>
+    </div>
+
+    <!-- Add Transaction -->
+    <div id="screen-add" class="screen">
+      <div class="app-header">
+        <span class="header-title">新增交易</span>
+        <div style="width:33px;"></div>
+      </div>
+      <div class="form-scroll">
+        <div class="form-group">
+          <label class="form-label">交易類別</label>
+          <div class="type-grid">
+            <div class="type-pill active" onclick="pickType('一般進貨',this)">一般進貨</div>
+            <div class="type-pill" onclick="pickType('一般銷售',this)">一般銷售</div>
+            <div class="type-pill" onclick="pickType('舊金回收',this)">舊金回收</div>
+            <div class="type-pill" onclick="pickType('師傅領料',this)">師傅領料</div>
+            <div class="type-pill" onclick="pickType('成品繳庫',this)">成品繳庫</div>
+            <div class="type-pill" onclick="pickType('損耗核銷',this)">損耗核銷</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">重量動向</label>
+          <div class="dir-toggle">
+            <div class="dir-opt in-active" id="wd-in" onclick="setWDir('入庫')">▲ 入庫</div>
+            <div class="dir-opt" id="wd-out" onclick="setWDir('出庫')">▼ 出庫</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">重量輸入（四單位即時連動）</label>
+          <div class="weight-grid">
+            <div class="wf" id="wf-gram"><div class="wf-label">公克 (g)</div><input class="wf-input" type="number" inputmode="decimal" id="w-g" placeholder="0.000" oninput="syncW('g')"/></div>
+            <div class="wf hl" id="wf-mace"><div class="wf-label">台錢 ★</div><input class="wf-input" type="number" inputmode="decimal" id="w-m" placeholder="0.000" oninput="syncW('m')"/></div>
+            <div class="wf" id="wf-tael"><div class="wf-label">台兩</div><input class="wf-input" type="number" inputmode="decimal" id="w-t" placeholder="0.0000" oninput="syncW('t')"/></div>
+            <div class="wf" id="wf-oz"><div class="wf-label">盎司 (oz)</div><input class="wf-input" type="number" inputmode="decimal" id="w-o" placeholder="0.0000" oninput="syncW('o')"/></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">現金動向</label>
+          <div class="dir-toggle">
+            <div class="dir-opt" id="cd-in" onclick="setCDir('收入')">▲ 收入</div>
+            <div class="dir-opt out-active" id="cd-out" onclick="setCDir('支出')">▼ 支出</div>
+          </div>
+        </div>
+        <div class="form-group"><label class="form-label">收付金額（NT$）</label><input type="number" inputmode="numeric" class="input-field" id="f-amount" placeholder="0"/></div>
+        <div class="form-group"><label class="form-label">參考牌價（選填）</label><input type="number" inputmode="numeric" class="input-field" id="f-price" placeholder="當時金價（元/台錢）"/></div>
+        <div class="form-group"><label class="form-label">交易對象（選填）</label><input type="text" class="input-field" id="f-target" placeholder="銀行、客戶名稱…"/></div>
+        <div class="form-group"><label class="form-label">備註（選填）</label><input type="text" class="input-field" id="f-note" placeholder="備註說明…"/></div>
+        <div class="form-error" id="f-err"></div>
+        <div class="btn-row">
+          <button class="btn-clear" onclick="clearForm()">清除</button>
+          <button class="btn-primary" style="flex:1;" id="submit-btn" onclick="doSubmit()">確認寫入紀錄</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Converter -->
+    <div id="screen-converter" class="screen">
+      <div class="app-header">
+        <span class="header-title">重量換算</span>
+        <div style="width:33px;"></div>
+      </div>
+      <div class="conv-scroll">
+        <div class="conv-card">
+          <div class="conv-card-title">黃金重量單位即時換算</div>
+          <div class="conv-row"><div class="conv-row-label">公克 (g)</div><input class="conv-input" type="number" inputmode="decimal" id="cv-g" placeholder="0" oninput="syncCV('g')"/></div>
+          <div class="conv-row"><div class="conv-row-label">台錢</div><input class="conv-input hl" type="number" inputmode="decimal" id="cv-m" placeholder="0" oninput="syncCV('m')"/></div>
+          <div class="conv-row"><div class="conv-row-label">台兩</div><input class="conv-input" type="number" inputmode="decimal" id="cv-t" placeholder="0" oninput="syncCV('t')"/></div>
+          <div class="conv-row"><div class="conv-row-label">盎司 (troy oz)</div><input class="conv-input" type="number" inputmode="decimal" id="cv-o" placeholder="0" oninput="syncCV('o')"/></div>
+          <div class="conv-row"><div class="conv-row-label">公斤 (kg)</div><input class="conv-input" type="number" inputmode="decimal" id="cv-k" placeholder="0" oninput="syncCV('k')"/></div>
+        </div>
+        <div class="price-links">
+          <div class="price-links-title">即時金價參考</div>
+          <div class="link-row">
+            <a class="link-btn" href="https://rate.bot.com.tw/gold/quote/recent" target="_blank">🏦 台銀黃金牌價</a>
+            <a class="link-btn" href="https://www.tradingview.com/symbols/XAUUSD/" target="_blank">🌐 國際金價</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile -->
+    <div id="screen-profile" class="screen">
+      <div class="app-header">
+        <span class="header-title">帳號設定</span>
+        <div style="width:33px;"></div>
+      </div>
+      <div class="profile-scroll">
+        <div class="profile-hero">
+          <div class="profile-avatar-big" id="p-avatar">G</div>
+          <div class="profile-name" id="p-name">用戶</div>
+          <div class="profile-email" id="p-email">-</div>
+        </div>
+        <div class="menu-item" onclick="doExport()">
+          <div class="mi-left"><div class="mi-icon" style="background:#1a1800;">📥</div><div class="mi-label">匯出交易紀錄（CSV）</div></div>
+          <div class="mi-arrow">›</div>
+        </div>
+        <div class="menu-item" onclick="showAbout()">
+          <div class="mi-left"><div class="mi-icon" style="background:#0d1a2b;">ℹ️</div><div class="mi-label">關於此應用程式</div></div>
+          <div class="mi-arrow">›</div>
+        </div>
+        <button class="btn-logout" onclick="doLogout()">登出帳號</button>
+      </div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <div class="nav-btn active" id="nb-home" onclick="goScreen('home')">
+        <div class="nav-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect class="nav-icon-svg" x="3" y="3" width="7" height="7" rx="1.5" stroke-width="1.8"/><rect class="nav-icon-svg" x="14" y="3" width="7" height="7" rx="1.5" stroke-width="1.8"/><rect class="nav-icon-svg" x="3" y="14" width="7" height="7" rx="1.5" stroke-width="1.8"/><rect class="nav-icon-svg" x="14" y="14" width="7" height="7" rx="1.5" stroke-width="1.8"/></svg></div>
+        <span class="nav-label">總覽</span>
+      </div>
+      <div class="nav-btn" id="nb-history" onclick="goScreen('history')">
+        <div class="nav-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path class="nav-icon-svg" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke-width="1.8" stroke-linecap="round"/><path class="nav-icon-svg" d="M9 5a2 2 0 002 2h2a2 2 0 002-2 2 2 0 00-2-2h-2a2 2 0 00-2 2z" stroke-width="1.8"/><path class="nav-icon-svg" d="M9 12h6M9 16h4" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+        <span class="nav-label">紀錄</span>
+      </div>
+      <div class="nav-add-wrap" onclick="goScreen('add')">
+        <div class="nav-add-btn"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 4v14M4 11h14" stroke="#1a1200" stroke-width="2.5" stroke-linecap="round"/></svg></div>
+        <span class="nav-add-label">新增</span>
+      </div>
+      <div class="nav-btn" id="nb-converter" onclick="goScreen('converter')">
+        <div class="nav-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path class="nav-icon-svg" d="M8 7h12M8 7l3-3M8 7l3 3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path class="nav-icon-svg" d="M16 17H4M16 17l-3-3M16 17l-3 3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="nav-label">換算</span>
+      </div>
+      <div class="nav-btn" id="nb-profile" onclick="goScreen('profile')">
+        <div class="nav-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle class="nav-icon-svg" cx="12" cy="8" r="3.5" stroke-width="1.8"/><path class="nav-icon-svg" d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+        <span class="nav-label">帳號</span>
+      </div>
+    </nav>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+// Firebase config (from your project)
+const firebaseConfig = {
+  apiKey: "AIzaSyC6bE5RWW8sXkR4flSD-wdGamwyyTFJoSs",
+  authDomain: "gold-inventory-app-a9eaf.firebaseapp.com",
+  projectId: "gold-inventory-app-a9eaf",
+  storageBucket: "gold-inventory-app-a9eaf.firebasestorage.app",
+  messagingSenderId: "709513635170",
+  appId: "1:709513635170:web:22f6ae6aa6e1fc4ed0783b"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// State
+let user = null;
+let allTx = [];
+let curFilter = '全部';
+let fState = { type: '一般進貨', wDir: '入庫', cDir: '支出', sync: false };
+let unsubTx = null;
+
+// Auth listener
+auth.onAuthStateChanged(u => {
+  document.getElementById('loading').style.display = 'none';
+  if (u) {
+    user = u;
+    const init = (u.displayName || u.email || 'G')[0].toUpperCase();
+    document.getElementById('hdr-avatar').textContent = init;
+    document.getElementById('p-avatar').textContent = init;
+    document.getElementById('p-name').textContent = u.displayName || '用戶';
+    document.getElementById('p-email').textContent = u.email || '-';
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('auth-screen').classList.remove('active');
+    document.getElementById('main-app').style.display = 'block';
+    subTx();
+  } else {
+    user = null;
+    if (unsubTx) { unsubTx(); unsubTx = null; }
+    document.getElementById('main-app').style.display = 'none';
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('auth-screen').classList.add('active');
+  }
+});
+
+// Auth tab
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', i === (tab==='login'?0:1)));
+  document.getElementById('login-form').style.display = tab==='login' ? 'block' : 'none';
+  document.getElementById('register-form').style.display = tab==='register' ? 'block' : 'none';
+}
+
+function authErr(code) {
+  const m = { 'auth/invalid-email':'電子郵件格式不正確','auth/user-not-found':'帳號不存在','auth/wrong-password':'密碼錯誤','auth/email-already-in-use':'此 Email 已被使用','auth/weak-password':'密碼至少需要 6 個字元','auth/too-many-requests':'登入次數過多，請稍後再試','auth/popup-closed-by-user':'視窗被關閉，請再試一次','auth/invalid-credential':'帳號或密碼不正確' };
+  return m[code] || '發生錯誤，請再試一次（' + code + '）';
+}
+
+async function doLogin() {
+  const e = document.getElementById('login-email').value.trim();
+  const p = document.getElementById('login-pwd').value;
+  const errEl = document.getElementById('login-err');
+  errEl.textContent = '';
+  if (!e || !p) { errEl.textContent = '請填寫所有欄位'; return; }
+  try { await auth.signInWithEmailAndPassword(e, p); }
+  catch(err) { errEl.textContent = authErr(err.code); }
+}
+
+async function doRegister() {
+  const e = document.getElementById('reg-email').value.trim();
+  const p = document.getElementById('reg-pwd').value;
+  const p2 = document.getElementById('reg-pwd2').value;
+  const errEl = document.getElementById('reg-err');
+  errEl.textContent = '';
+  if (!e || !p || !p2) { errEl.textContent = '請填寫所有欄位'; return; }
+  if (p !== p2) { errEl.textContent = '兩次密碼不一致'; return; }
+  try { await auth.createUserWithEmailAndPassword(e, p); toast('帳號建立成功！', 'success'); }
+  catch(err) { errEl.textContent = authErr(err.code); }
+}
+
+async function doGoogleLogin() {
+  try { await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+  catch(err) {
+    const el = document.getElementById('login-err') || document.getElementById('reg-err');
+    if (el) el.textContent = authErr(err.code);
+  }
+}
+
+async function doLogout() { await auth.signOut(); toast('已登出'); }
+
+// Navigation
+const SCREENS = ['home','history','add','converter','profile'];
+const NAV_IDS = ['home','history',null,'converter','profile'];
+function goScreen(name) {
+  SCREENS.forEach(s => document.getElementById('screen-'+s)?.classList.toggle('active', s===name));
+  NAV_IDS.forEach(n => { if(n) document.getElementById('nb-'+n)?.classList.toggle('active', n===name); });
+  if (name==='history') renderHistory();
+}
+
+// Firestore
+function txCol() { return db.collection('users').doc(user.uid).collection('transactions'); }
+
+function subTx() {
+  if (unsubTx) unsubTx();
+  unsubTx = txCol().orderBy('timestamp','desc').onSnapshot(snap => {
+    allTx = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    refreshDash();
+    renderHistory();
+  }, err => { console.error(err); });
+}
+
+async function doSubmit() {
+  const mace = parseFloat(document.getElementById('w-m').value) || 0;
+  const amount = parseInt(document.getElementById('f-amount').value) || 0;
+  const errEl = document.getElementById('f-err');
+  errEl.textContent = '';
+  if (mace === 0 && amount === 0) { errEl.textContent = '請至少輸入重量或金額'; return; }
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = '寫入中...';
+  try {
+    await txCol().add({
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      date: new Date().toISOString(),
+      type: fState.type,
+      wDir: mace > 0 ? fState.wDir : '',
+      mace: mace > 0 ? +mace.toFixed(3) : 0,
+      gram: mace > 0 ? +(mace * 3.75).toFixed(3) : 0,
+      tael: mace > 0 ? +(mace / 10).toFixed(4) : 0,
+      oz: mace > 0 ? +(mace / 8.294).toFixed(4) : 0,
+      cDir: amount > 0 ? fState.cDir : '',
+      amount: amount,
+      price: parseInt(document.getElementById('f-price').value) || 0,
+      target: document.getElementById('f-target').value.trim(),
+      note: document.getElementById('f-note').value.trim(),
+    });
+    toast('交易已成功寫入！', 'success');
+    clearForm();
+    goScreen('home');
+  } catch(err) { errEl.textContent = '寫入失敗：' + err.message; }
+  finally { btn.disabled = false; btn.textContent = '確認寫入紀錄'; }
+}
+
+// Dashboard
+function refreshDash() {
+  const sorted = [...allTx].sort((a,b) => (a.timestamp?.seconds||0)-(b.timestamp?.seconds||0));
+  let totW = 0, totC = 0;
+  sorted.forEach(tx => {
+    if (tx.wDir==='入庫') totW += tx.mace||0;
+    if (tx.wDir==='出庫') totW -= tx.mace||0;
+    if (tx.cDir==='收入') totC += tx.amount||0;
+    if (tx.cDir==='支出') totC -= tx.amount||0;
+  });
+  document.getElementById('s-weight').textContent = totW.toFixed(3);
+  document.getElementById('s-weight-sub').textContent = '台錢 ≈ ' + (totW*3.75).toFixed(3) + 'g';
+  document.getElementById('s-balance').textContent = 'NT$' + totC.toLocaleString();
+  const today = new Date().toISOString().slice(0,10);
+  let tiw=0,tow=0,tic=0,toc=0;
+  allTx.forEach(tx => {
+    if ((tx.date||'').slice(0,10)===today) {
+      if(tx.wDir==='入庫') tiw+=tx.mace||0;
+      if(tx.wDir==='出庫') tow+=tx.mace||0;
+      if(tx.cDir==='收入') tic+=tx.amount||0;
+      if(tx.cDir==='支出') toc+=tx.amount||0;
+    }
+  });
+  document.getElementById('td-inw').textContent = '+' + tiw.toFixed(3);
+  document.getElementById('td-outw').textContent = '-' + tow.toFixed(3);
+  document.getElementById('td-inc').textContent = '+' + tic.toLocaleString();
+  document.getElementById('td-outc').textContent = '-' + toc.toLocaleString();
+  const recent = allTx.slice(0,5);
+  document.getElementById('recent-list').innerHTML = recent.length
+    ? recent.map(txCard).join('')
+    : '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">尚無交易紀錄</div><div class="empty-sub">點下方「+」開始記錄</div></div>';
+}
+
+function txCard(tx) {
+  const isIn = tx.wDir==='入庫';
+  const isOut = tx.wDir==='出庫';
+  const dotCls = isIn ? 'in' : (isOut ? 'out' : 'neutral');
+  const icon = isIn ? '↑' : (isOut ? '↓' : '◎');
+  let wStr = '', wCls = '';
+  if (tx.mace > 0) { wStr = (isIn?'+':'-') + tx.mace.toFixed(3) + '錢'; wCls = isIn?'in':'out'; }
+  else if (tx.amount > 0) { wStr = (tx.cDir==='收入'?'+':'-') + 'NT$' + tx.amount.toLocaleString(); wCls = tx.cDir==='收入'?'in':'out'; }
+  const dateStr = tx.date ? new Date(tx.date).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+  const meta = [dateStr, tx.target].filter(Boolean).join(' · ');
+  return `<div class="tx-item"><div class="tx-dot ${dotCls}" style="color:${isIn?'var(--green)':'var(--red)'};">${icon}</div><div class="tx-info"><div class="tx-type">${tx.type}</div><div class="tx-meta">${meta||'無備註'}</div></div><div class="tx-right"><div class="tx-wt ${wCls}">${wStr}</div>${tx.note?`<div class="tx-sub">${tx.note}</div>`:''}</div></div>`;
+}
+
+// History
+function renderHistory() {
+  const filtered = curFilter==='全部' ? allTx : allTx.filter(t=>t.type===curFilter);
+  const el = document.getElementById('history-list');
+  if (!el) return;
+  el.innerHTML = filtered.length ? filtered.map(txCard).join('') : '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">沒有符合的紀錄</div></div>';
+}
+
+function setFilter(f, el) {
+  curFilter = f;
+  document.querySelectorAll('.fpill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  renderHistory();
+}
+
+// Form logic
+const TYPE_MAP = { '一般進貨':{w:'入庫',c:'支出'},'舊金回收':{w:'入庫',c:'支出'},'成品繳庫':{w:'入庫',c:'支出'},'一般銷售':{w:'出庫',c:'收入'},'師傅領料':{w:'出庫',c:'支出'},'損耗核銷':{w:'出庫',c:'支出'} };
+
+function pickType(type, el) {
+  document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  fState.type = type;
+  const d = TYPE_MAP[type];
+  if (d) { setWDir(d.w); setCDir(d.c); }
+}
+
+function setWDir(d) {
+  fState.wDir = d;
+  document.getElementById('wd-in').className = 'dir-opt'+(d==='入庫'?' in-active':'');
+  document.getElementById('wd-out').className = 'dir-opt'+(d==='出庫'?' out-active':'');
+}
+
+function setCDir(d) {
+  fState.cDir = d;
+  document.getElementById('cd-in').className = 'dir-opt'+(d==='收入'?' in-active':'');
+  document.getElementById('cd-out').className = 'dir-opt'+(d==='支出'?' out-active':'');
+}
+
+function clearForm() {
+  ['w-g','w-m','w-t','w-o','f-amount','f-price','f-target','f-note'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('f-err').textContent = '';
+  pickType('一般進貨', document.querySelector('.type-pill'));
+}
+
+// Weight sync
+const G_PER_M = 3.75, M_PER_T = 10, M_PER_OZ = 31.1034768/3.75;
+function syncW(src) {
+  if (fState.sync) return; fState.sync = true;
+  const ids = {g:'w-g',m:'w-m',t:'w-t',o:'w-o'};
+  const v = parseFloat(document.getElementById(ids[src]).value);
+  if (!isNaN(v) && v >= 0) {
+    let m = src==='g'?v/G_PER_M : src==='m'?v : src==='t'?v*M_PER_T : v*M_PER_OZ;
+    if(src!=='g') document.getElementById('w-g').value = +(m*G_PER_M).toFixed(3);
+    if(src!=='m') document.getElementById('w-m').value = +m.toFixed(3);
+    if(src!=='t') document.getElementById('w-t').value = +(m/M_PER_T).toFixed(4);
+    if(src!=='o') document.getElementById('w-o').value = +(m/M_PER_OZ).toFixed(4);
+  }
+  fState.sync = false;
+}
+
+function syncCV(src) {
+  if (fState.sync) return; fState.sync = true;
+  const ids = {g:'cv-g',m:'cv-m',t:'cv-t',o:'cv-o',k:'cv-k'};
+  const v = parseFloat(document.getElementById(ids[src]).value);
+  if (!isNaN(v) && v >= 0) {
+    let m = src==='g'?v/G_PER_M : src==='m'?v : src==='t'?v*M_PER_T : src==='o'?v*M_PER_OZ : v*1000/G_PER_M;
+    if(src!=='g') document.getElementById('cv-g').value = +(m*G_PER_M).toFixed(3);
+    if(src!=='m') document.getElementById('cv-m').value = +m.toFixed(3);
+    if(src!=='t') document.getElementById('cv-t').value = +(m/M_PER_T).toFixed(4);
+    if(src!=='o') document.getElementById('cv-o').value = +(m/M_PER_OZ).toFixed(4);
+    if(src!=='k') document.getElementById('cv-k').value = +(m*G_PER_M/1000).toFixed(6);
+  }
+  fState.sync = false;
+}
+
+// Export CSV
+function doExport() {
+  if (!allTx.length) { toast('尚無資料可匯出', 'error'); return; }
+  const h = ['交易日期','交易類別','重量動向','重量(台錢)','重量(公克)','現金動向','金額(NT$)','參考牌價','交易對象','備註'];
+  const rows = [...allTx].sort((a,b)=>(a.timestamp?.seconds||0)-(b.timestamp?.seconds||0)).map(tx=>[
+    tx.date?new Date(tx.date).toLocaleString('zh-TW'):'',
+    tx.type,tx.wDir,tx.mace,tx.gram,tx.cDir,tx.amount,tx.price,tx.target,tx.note
+  ]);
+  const csv = '\uFEFF' + [h,...rows].map(r=>r.map(v=>`"${v||''}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download = '黃金庫存紀錄_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  toast('CSV 已匯出！', 'success');
+}
+
+function showAbout() {
+  alert('黃金庫存管理系統\n版本 v1.0.0\n\nLBMA 標準介面 · 個人私密庫存追蹤\n資料儲存於 Firebase 雲端，帳號完全隔離。\n\n© 2026 Edison.lin');
+}
+
+function toast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'show ' + type;
+  setTimeout(()=>{ t.className=''; }, 3000);
+}
+</script>
+</body>
+</html>
