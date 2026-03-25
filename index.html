@@ -116,7 +116,8 @@
     .sec-more { font-size: 13px; color: var(--gold); cursor: pointer; }
     
     /* Transaction Card */
-    .tx-item { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 11px 13px; display: flex; align-items: center; gap: 11px; margin-bottom: 8px; }
+    .tx-item { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 11px 13px; display: flex; align-items: center; gap: 11px; margin-bottom: 8px; cursor: pointer; transition: background 0.15s; -webkit-tap-highlight-color: transparent; }
+    .tx-item:active { background: var(--bg3); }
     .tx-dot { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; background: var(--bg3); }
     .tx-info { flex: 1; min-width: 0; }
     .tx-type { font-size: 15px; font-weight: bold; color: var(--text); }
@@ -210,6 +211,20 @@
     .dc-val { font-size: 16px; font-weight: bold; }
     .dc-val.in { color: var(--green); }
     .dc-val.out { color: var(--red); }
+
+    /* Detail View */
+    .detail-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 0 16px; margin-bottom: 12px; }
+    .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 0.5px solid var(--border); }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label { font-size: 14px; color: var(--text2); }
+    .detail-val { font-size: 15px; font-weight: bold; color: var(--text); text-align: right; word-break: break-all; max-width: 65%; }
+    .detail-val.in { color: var(--green); }
+    .detail-val.out { color: var(--red); }
+
+    /* Backup Reminder Banner */
+    .backup-banner { display: none; background: rgba(229,107,78,0.15); border: 1px solid rgba(229,107,78,0.4); color: var(--text); padding: 12px 14px; border-radius: 12px; margin-bottom: 14px; align-items: center; justify-content: space-between; }
+    .backup-banner-text { font-size: 13px; line-height: 1.4; color: var(--text2); }
+    .btn-backup { background: var(--red); color: #fff; border: none; border-radius: 8px; padding: 8px 12px; font-size: 13px; font-weight: bold; cursor: pointer; flex-shrink: 0; margin-left: 10px; }
 
     /* Toast */
     #toast { position: fixed; bottom: calc(82px + var(--sab)); left: 50%; transform: translateX(-50%) translateY(16px); background: var(--text); border: none; border-radius: 10px; padding: 12px 24px; font-size: 15px; font-weight: bold; color: var(--bg); opacity: 0; transition: all 0.25s; z-index: 99; white-space: nowrap; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
@@ -313,9 +328,17 @@
           </div>
           <span class="header-title">Inventory</span>
         </div>
-        <div class="header-avatar" id="hdr-avatar" onclick="goScreen('profile')">G</div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 13px; color: var(--gold-light); cursor: pointer;" onclick="showInstructions()">ℹ️ 系統說明</span>
+          <div class="header-avatar" id="hdr-avatar" onclick="goScreen('profile')">G</div>
+        </div>
       </div>
       <div class="dash-scroll">
+        <div class="backup-banner" id="backup-reminder">
+          <div class="backup-banner-text">💡 <b>溫馨提醒：</b>您有一段時間未備份資料，建議定期匯出 CSV 檔案以保全紀錄。</div>
+          <button class="btn-backup" onclick="doExport()">立即匯出</button>
+        </div>
+
         <div class="stat-grid">
           <div class="stat-card gold-card">
             <div class="stat-label">總庫存重量 (台錢)</div>
@@ -366,6 +389,18 @@
           <div class="fpill" onclick="setFilter('損耗核銷',this)">損耗核銷</div>
         </div>
         <div id="history-list"></div>
+      </div>
+    </div>
+
+    <div id="screen-detail" class="screen">
+      <div class="app-header">
+        <button class="btn-back" onclick="goBackToList()">‹ 返回</button>
+        <span class="header-title">交易明細</span>
+        <div style="width:60px;"></div>
+      </div>
+      <div class="dash-scroll">
+        <div class="detail-card" id="detail-content">
+          </div>
       </div>
     </div>
 
@@ -548,6 +583,7 @@ let fState = { type: '一般進貨', wDir: '入庫', cDir: '支出', sync: false
 let unsubTx = null;
 let trendChart = null;
 let editingTxId = null;
+let lastScreen = 'home'; // 紀錄上一次的頁面，讓返回鍵能正常運作
 
 // Auth listener
 auth.onAuthStateChanged(u => {
@@ -616,15 +652,23 @@ async function doGoogleLogin() {
 
 async function doLogout() { await auth.signOut(); toast('已登出'); }
 
-const SCREENS = ['home','history','add','converter','profile', 'daily'];
+const SCREENS = ['home','history','add','converter','profile', 'daily', 'detail'];
 function goScreen(name) {
   SCREENS.forEach(s => document.getElementById('screen-'+s)?.classList.toggle('active', s===name));
   
+  if (name === 'home' || name === 'history') {
+    lastScreen = name;
+  }
+
   ['home','history','converter','profile'].forEach(n => {
     const el = document.getElementById('nb-'+n);
     if(el) el.classList.remove('active');
   });
-  let activeNav = name === 'daily' ? 'profile' : name;
+
+  let activeNav = name;
+  if (name === 'daily') activeNav = 'profile';
+  if (name === 'detail') activeNav = lastScreen === 'home' ? 'home' : 'history';
+
   if (activeNav !== 'add') {
     const el = document.getElementById('nb-'+activeNav);
     if(el) el.classList.add('active');
@@ -636,6 +680,15 @@ function goScreen(name) {
   }
   if (name==='add' && !editingTxId) clearForm(); 
   if (name==='daily') renderDailySummary(); 
+}
+
+function goBackToList() {
+  goScreen(lastScreen);
+}
+
+// ★ 顯示系統操作說明
+function showInstructions() {
+  alert('【系統操作說明】\n\n1. 新增交易：點擊下方「+」可新增進銷或核銷紀錄，支援修改時間補登。\n2. 重量連動：輸入公克/台錢/台兩/盎司任一欄位，系統將自動換算。\n3. 歷史紀錄：支援按分類篩選，點擊單筆紀錄可查看明細，亦可進行修改與刪除。\n4. 趨勢圖表：在「紀錄」頁面上方可展開庫存折線圖，掌握趨勢。\n5. 帳號與報表：在「帳號」頁面可查看每日結算報表，並匯出 CSV 檔備份。\n\n💡 建議定期前往帳號頁面匯出 CSV 檔案，以保障您的資料安全。');
 }
 
 function txCol() { return db.collection('users').doc(user.uid).collection('transactions'); }
@@ -650,6 +703,20 @@ function subTx() {
     if(document.getElementById('chart-wrap').style.display === 'block') drawChart();
     if(document.getElementById('screen-daily').classList.contains('active')) renderDailySummary();
   }, err => { console.error(err); });
+}
+
+// ★ 檢查備份橫幅邏輯
+function checkBackupReminder() {
+  const lastBackup = localStorage.getItem('lastBackupDate');
+  const now = Date.now();
+  const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
+  const banner = document.getElementById('backup-reminder');
+  
+  if (allTx.length > 0 && (!lastBackup || (now - lastBackup > ONE_WEEK))) {
+    banner.style.display = 'flex';
+  } else {
+    banner.style.display = 'none';
+  }
 }
 
 async function doSubmit() {
@@ -670,7 +737,7 @@ async function doSubmit() {
     timestamp: firebase.firestore.Timestamp.fromDate(txDate), 
     date: txDate.toISOString(),
     isBackdated: isBackdated,
-    isEdited: !!editingTxId, // ★ 標記此筆資料是被修改過的
+    isEdited: !!editingTxId,
     type: fState.type,
     wDir: mace > 0 ? fState.wDir : '',
     mace: mace > 0 ? +mace.toFixed(3) : 0,
@@ -740,6 +807,38 @@ function editTx(id) {
   goScreen('add'); 
 }
 
+function showDetail(id) {
+  const tx = allTx.find(t => t.id === id);
+  if(!tx) return;
+  
+  const isIn = tx.wDir === '入庫';
+  const isOut = tx.wDir === '出庫';
+  let wStr = tx.mace > 0 ? ((isIn?'+':'-') + tx.mace.toFixed(3) + ' 錢') : '-';
+  let wCls = tx.mace > 0 ? (isIn?'in':'out') : '';
+  
+  let cStr = tx.amount > 0 ? ((tx.cDir==='收入'?'+':'-') + 'NT$' + tx.amount.toLocaleString()) : '-';
+  let cCls = tx.amount > 0 ? (tx.cDir==='收入'?'in':'out') : '';
+
+  const dateStr = tx.date ? new Date(tx.date).toLocaleString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-';
+  
+  let statusText = '正常';
+  if(tx.isEdited) statusText = '已修改';
+  else if(tx.isBackdated) statusText = '補登';
+
+  const html = `
+    <div class="detail-row"><div class="detail-label">交易日期</div><div class="detail-val">${dateStr}</div></div>
+    <div class="detail-row"><div class="detail-label">交易類別</div><div class="detail-val" style="color:var(--gold);">${tx.type}</div></div>
+    <div class="detail-row"><div class="detail-label">重量異動</div><div class="detail-val ${wCls}">${wStr}</div></div>
+    <div class="detail-row"><div class="detail-label">收付金額</div><div class="detail-val ${cCls}">${cStr}</div></div>
+    <div class="detail-row"><div class="detail-label">參考牌價</div><div class="detail-val">${tx.price ? 'NT$ '+tx.price : '-'}</div></div>
+    <div class="detail-row"><div class="detail-label">交易對象</div><div class="detail-val">${tx.target || '-'}</div></div>
+    <div class="detail-row"><div class="detail-label">備註</div><div class="detail-val">${tx.note || '-'}</div></div>
+    <div class="detail-row"><div class="detail-label">資料狀態</div><div class="detail-val" style="color:${statusText==='正常'?'var(--text2)':'var(--red)'};">${statusText}</div></div>
+  `;
+  document.getElementById('detail-content').innerHTML = html;
+  goScreen('detail');
+}
+
 function refreshDash() {
   const sorted = [...allTx].sort((a,b) => (a.timestamp?.seconds||0)-(b.timestamp?.seconds||0));
   let totW = 0, totC = 0;
@@ -773,6 +872,9 @@ function refreshDash() {
   document.getElementById('recent-list').innerHTML = recent.length
     ? recent.map(txCard).join('')
     : '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">尚無交易紀錄</div><div class="empty-sub">點下方「+」開始記錄</div></div>';
+    
+  // 檢查是否需要跳出備份提醒
+  checkBackupReminder();
 }
 
 function txCard(tx) {
@@ -794,7 +896,6 @@ function txCard(tx) {
 
   const dateStr = tx.date ? new Date(tx.date).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
   
-  // ★ 修改與補登的標籤判斷 (優先顯示修改，若為純補登則顯示補登)
   let badgeStr = '';
   if (tx.isEdited) {
     badgeStr = '<span style="font-size:12px; color:#ffffff; font-weight:normal; margin-left:6px;">(修改)</span>';
@@ -804,7 +905,7 @@ function txCard(tx) {
   
   const meta = [dateStr, tx.target].filter(Boolean).join(' · ');
   
-  return `<div class="tx-item">
+  return `<div class="tx-item" onclick="showDetail('${tx.id}')">
             <div class="tx-dot">${icon}</div>
             <div class="tx-info"><div class="tx-type">${tx.type}${badgeStr}</div><div class="tx-meta">${meta||'無備註'}</div></div>
             <div class="tx-right">
@@ -813,8 +914,8 @@ function txCard(tx) {
               ${tx.note ? `<div class="tx-sub">${tx.note}</div>` : ''}
             </div>
             <div class="tx-actions">
-              <button class="btn-action" onclick="editTx('${tx.id}')">✏️</button>
-              <button class="btn-action" onclick="deleteTx('${tx.id}')">🗑️</button>
+              <button class="btn-action" onclick="event.stopPropagation(); editTx('${tx.id}')">✏️</button>
+              <button class="btn-action" onclick="event.stopPropagation(); deleteTx('${tx.id}')">🗑️</button>
             </div>
           </div>`;
 }
@@ -1000,16 +1101,13 @@ function syncCV(src) {
     if(src!=='k') document.getElementById('cv-k').value = +(m*G_PER_M/1000).toFixed(6);
   }
   fState.sync = false;
-  
-  // ★ 觸發市值計算
   calcValue();
 }
 
-// ★ 新增：計算總市值
 function calcValue() {
   const mace = parseFloat(document.getElementById('cv-m').value) || 0;
   const price = parseFloat(document.getElementById('cv-price').value) || 0;
-  const total = Math.round(mace * price); // 四捨五入到整數
+  const total = Math.round(mace * price); 
   document.getElementById('cv-total').textContent = 'NT$ ' + total.toLocaleString();
 }
 
@@ -1048,12 +1146,17 @@ function doExport() {
   a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
   a.download = '貴金屬庫存紀錄_'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();
+  
+  // ★ 更新最後備份時間並隱藏橫幅
+  localStorage.setItem('lastBackupDate', Date.now());
+  checkBackupReminder();
+  
   toast('CSV 報表已成功匯出！', 'success');
 }
 
-// ★ 修改：加入免責聲明與贊助用語
+// ★ 更新免責聲明與贊助用語
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.0.0\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.0.0\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
