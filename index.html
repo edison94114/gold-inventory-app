@@ -16,13 +16,15 @@
     :root {
       --gold: #c9a84c; --gold-light: #f0d78c; --gold-dark: #8a6a00;
       --bg: #0d0d0d; --bg2: #161616; --bg3: #1f1f1f; --bg4: #2a2a2a;
-      --text: #f0f0f0; --text2: #aaaaaa; --text3: #666666;
+      /* 調整字體顏色變得更亮白 */
+      --text: #ffffff; --text2: #e0e0e0; --text3: #cccccc;
       --green: #4ecb71; --green-bg: #0a2416; --red: #e56b4e; --red-bg: #2b0d0d;
-      --border: #2a2a2a;
+      --border: #333333; /* 邊框也稍微調亮增加立體感 */
       --sat: env(safe-area-inset-top, 0px);
       --sab: env(safe-area-inset-bottom, 0px);
     }
-    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, 'PingFang TC', 'Microsoft JhengHei', sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+    /* 整體字體調大 */
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, 'PingFang TC', 'Microsoft JhengHei', sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; font-size: 16px; }
     #app { max-width: 430px; margin: 0 auto; min-height: 100vh; background: var(--bg); position: relative; }
 
     /* Loading */
@@ -37,8 +39,8 @@
     .logo-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
     .lbma-bar { position: relative; width: 72px; height: 50px; }
     .lbma-bar svg { width: 100%; height: 100%; }
-    .logo-inventory-text { font-size: 12px; color: var(--gold); letter-spacing: 0.2em; font-weight: 500; text-transform: uppercase; }
-    .logo-app-title { font-size: 17px; color: var(--gold-light); font-weight: 500; margin-top: 2px; }
+    .logo-inventory-text { font-size: 13px; color: var(--gold); letter-spacing: 0.2em; font-weight: 500; text-transform: uppercase; }
+    .logo-app-title { font-size: 18px; color: var(--gold-light); font-weight: 500; margin-top: 2px; }
 
     /* Screens */
     .screen { display: none; flex-direction: column; min-height: 100vh; padding-bottom: calc(72px + var(--sab)); }
@@ -50,153 +52,158 @@
     .auth-hero { background: linear-gradient(180deg, #1c1600 0%, var(--bg) 100%); padding: calc(56px + var(--sat)) 24px 36px; display: flex; flex-direction: column; align-items: center; }
     .auth-form { padding: 0 24px 48px; flex: 1; }
     .auth-tabs { display: flex; background: var(--bg3); border-radius: 12px; padding: 3px; margin-bottom: 22px; }
-    .auth-tab { flex: 1; padding: 10px; text-align: center; font-size: 15px; border-radius: 10px; cursor: pointer; color: var(--text2); transition: all 0.2s; }
+    .auth-tab { flex: 1; padding: 10px; text-align: center; font-size: 16px; border-radius: 10px; cursor: pointer; color: var(--text2); transition: all 0.2s; }
     .auth-tab.active { background: var(--gold); color: #1a1200; font-weight: 500; }
     .input-group { margin-bottom: 14px; }
-    .input-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; display: block; }
-    .input-field { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 11px; padding: 14px; color: var(--text); font-size: 15px; outline: none; transition: border-color 0.2s; font-family: inherit; -webkit-appearance: none; }
+    .input-label { font-size: 14px; color: var(--text2); margin-bottom: 6px; display: block; }
+    .input-field { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 11px; padding: 14px; color: var(--text); font-size: 16px; outline: none; transition: border-color 0.2s; font-family: inherit; -webkit-appearance: none; }
     .input-field:focus { border-color: var(--gold); }
-    .btn-primary { width: 100%; background: linear-gradient(135deg, #c9a84c, #e8c96a); border: none; border-radius: 12px; padding: 15px; color: #1a1200; font-size: 16px; font-weight: 500; cursor: pointer; font-family: inherit; transition: opacity 0.2s; -webkit-appearance: none; display: block; }
+    .btn-primary { width: 100%; background: linear-gradient(135deg, #c9a84c, #e8c96a); border: none; border-radius: 12px; padding: 15px; color: #1a1200; font-size: 17px; font-weight: bold; cursor: pointer; font-family: inherit; transition: opacity 0.2s; -webkit-appearance: none; display: block; }
     .btn-primary:active { opacity: 0.8; }
     .btn-primary:disabled { opacity: 0.5; }
     .divider-or { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
     .divider-or::before, .divider-or::after { content: ''; flex: 1; height: 0.5px; background: var(--border); }
-    .divider-or span { font-size: 12px; color: var(--text3); }
-    .btn-google { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 12px; padding: 14px; color: var(--text); font-size: 15px; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 10px; -webkit-appearance: none; }
+    .divider-or span { font-size: 13px; color: var(--text3); }
+    .btn-google { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 12px; padding: 14px; color: var(--text); font-size: 16px; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 10px; -webkit-appearance: none; }
     .btn-google:active { background: var(--bg4); }
-    .auth-error { color: var(--red); font-size: 13px; text-align: center; margin-top: 10px; min-height: 18px; line-height: 1.4; }
+    .auth-error { color: var(--red); font-size: 14px; text-align: center; margin-top: 10px; min-height: 18px; line-height: 1.4; }
 
     /* App Header */
     .app-header { background: var(--bg); padding: calc(var(--sat) + 10px) 16px 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid var(--border); position: sticky; top: 0; z-index: 10; }
     .header-logo-mini { display: flex; align-items: center; gap: 8px; }
     .header-lbma { width: 38px; height: 26px; }
     .header-lbma svg { width: 100%; height: 100%; }
-    .header-title { font-size: 16px; color: var(--gold-light); font-weight: 500; }
-    .header-avatar { width: 33px; height: 33px; border-radius: 50%; background: #2a1f00; border: 1.5px solid var(--gold); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; color: var(--gold); cursor: pointer; flex-shrink: 0; }
+    .header-title { font-size: 18px; color: var(--gold-light); font-weight: 500; }
+    .header-avatar { width: 35px; height: 35px; border-radius: 50%; background: #2a1f00; border: 1.5px solid var(--gold); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: var(--gold); cursor: pointer; flex-shrink: 0; }
 
-    /* Bottom Nav */
+    /* Bottom Nav (修改了預設顏色與字體大小) */
     .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; background: #080808; border-top: 1px solid #333; padding: 6px 0 calc(6px + var(--sab)); display: flex; z-index: 20; }
     .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 4px 0; }
     .nav-icon { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
-    .nav-label { font-size: 10px; color: #444; font-weight: 500; transition: color 0.15s; }
+    .nav-label { font-size: 12px; color: #ffffff; font-weight: 500; transition: color 0.15s; } /* 修改為白色 */
     .nav-btn.active .nav-label { color: var(--gold); }
     .nav-icon-svg { transition: stroke 0.15s; }
-    .nav-btn .nav-icon-svg { stroke: #444; }
+    .nav-btn .nav-icon-svg { stroke: #ffffff; } /* 修改為白色 */
     .nav-btn.active .nav-icon-svg { stroke: var(--gold); }
     .nav-add-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 0; }
     .nav-add-btn { width: 54px; height: 54px; border-radius: 50%; background: linear-gradient(135deg, #c9a84c, #f0d78c); display: flex; align-items: center; justify-content: center; position: relative; top: -18px; box-shadow: 0 4px 20px rgba(201,168,76,0.45); }
-    .nav-add-label { font-size: 10px; color: var(--gold); font-weight: 500; margin-top: -14px; }
+    .nav-add-label { font-size: 12px; color: var(--gold); font-weight: bold; margin-top: -14px; }
 
     /* Dashboard */
     .dash-scroll { overflow-y: auto; flex: 1; padding: 14px 14px 0; -webkit-overflow-scrolling: touch; }
     .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
     .stat-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 14px; padding: 14px 13px; }
-    .stat-card.gold-card { border-color: rgba(201,168,76,0.3); background: #161200; }
-    .stat-card.green-card { border-color: rgba(78,203,113,0.25); background: #0a1a0f; }
-    .stat-label { font-size: 11px; color: var(--text3); margin-bottom: 7px; }
-    .stat-val { font-size: 20px; font-weight: 500; color: var(--gold-light); line-height: 1.1; word-break: break-all; }
+    .stat-card.gold-card { border-color: rgba(201,168,76,0.5); background: #161200; }
+    .stat-card.green-card { border-color: rgba(78,203,113,0.4); background: #0a1a0f; }
+    .stat-label { font-size: 13px; color: var(--text2); margin-bottom: 7px; font-weight: 500; }
+    .stat-val { font-size: 22px; font-weight: bold; color: var(--gold-light); line-height: 1.1; word-break: break-all; }
     .stat-val.gv { color: var(--green); }
-    .stat-unit { font-size: 10px; color: var(--text3); margin-top: 5px; }
-    .today-card { background: #141200; border: 0.5px solid rgba(201,168,76,0.2); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
-    .today-title { font-size: 10px; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
+    .stat-unit { font-size: 12px; color: var(--text3); margin-top: 5px; }
+    .today-card { background: #141200; border: 0.5px solid rgba(201,168,76,0.3); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+    .today-title { font-size: 12px; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; font-weight: bold; }
     .today-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; }
     .today-item { text-align: center; padding: 0 4px; }
     .today-item + .today-item { border-left: 0.5px solid var(--border); }
-    .ti-label { font-size: 10px; color: var(--text3); margin-bottom: 4px; }
-    .ti-val { font-size: 12px; font-weight: 500; }
+    .ti-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+    .ti-val { font-size: 14px; font-weight: bold; }
     .ti-val.in { color: var(--green); }
     .ti-val.out { color: var(--red); }
     .sec-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-    .sec-title { font-size: 13px; color: var(--text2); font-weight: 500; }
-    .sec-more { font-size: 12px; color: var(--gold); cursor: pointer; }
+    .sec-title { font-size: 15px; color: var(--text); font-weight: bold; }
+    .sec-more { font-size: 13px; color: var(--gold); cursor: pointer; }
+    
+    /* 交易紀錄卡片與刪除按鈕 */
     .tx-item { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 11px 13px; display: flex; align-items: center; gap: 11px; margin-bottom: 8px; }
-    .tx-dot { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+    .tx-dot { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
     .tx-dot.in { background: var(--green-bg); }
     .tx-dot.out { background: var(--red-bg); }
     .tx-dot.neutral { background: var(--bg3); }
     .tx-info { flex: 1; min-width: 0; }
-    .tx-type { font-size: 13px; font-weight: 500; color: var(--text); }
-    .tx-meta { font-size: 11px; color: var(--text3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tx-type { font-size: 15px; font-weight: bold; color: var(--text); }
+    .tx-meta { font-size: 12px; color: var(--text2); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .tx-right { text-align: right; flex-shrink: 0; }
-    .tx-wt { font-size: 13px; font-weight: 500; }
+    .tx-wt { font-size: 15px; font-weight: bold; }
     .tx-wt.in { color: var(--green); }
     .tx-wt.out { color: var(--red); }
-    .tx-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .tx-sub { font-size: 12px; color: var(--text3); margin-top: 3px; }
+    .tx-actions { margin-left: 8px; padding-left: 8px; border-left: 1px solid var(--border); display: flex; align-items: center; }
+    .btn-del { background: transparent; border: none; font-size: 18px; cursor: pointer; padding: 6px 4px; opacity: 0.8; transition: opacity 0.2s; }
+    .btn-del:active { opacity: 0.4; }
+
     .empty-state { text-align: center; padding: 52px 20px; }
     .empty-icon { font-size: 44px; margin-bottom: 14px; }
-    .empty-text { font-size: 15px; color: var(--text2); }
-    .empty-sub { font-size: 13px; color: var(--text3); margin-top: 6px; }
+    .empty-text { font-size: 16px; color: var(--text2); }
+    .empty-sub { font-size: 14px; color: var(--text3); margin-top: 6px; }
 
     /* Form */
     .form-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
-    .form-group { margin-bottom: 16px; }
-    .form-label { font-size: 12px; color: var(--text2); margin-bottom: 8px; display: block; letter-spacing: 0.03em; }
-    .type-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
-    .type-pill { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 9px; padding: 9px 4px; text-align: center; font-size: 12px; color: var(--text2); cursor: pointer; transition: all 0.15s; }
-    .type-pill.active { background: #1c1600; border-color: var(--gold); color: var(--gold-light); }
+    .form-group { margin-bottom: 18px; }
+    .form-label { font-size: 14px; color: var(--text2); margin-bottom: 8px; display: block; letter-spacing: 0.03em; font-weight: 500; }
+    .type-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .type-pill { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 9px; padding: 10px 4px; text-align: center; font-size: 13px; color: var(--text2); cursor: pointer; transition: all 0.15s; }
+    .type-pill.active { background: #1c1600; border-color: var(--gold); color: var(--gold-light); font-weight: bold; }
     .dir-toggle { display: flex; background: var(--bg3); border-radius: 11px; overflow: hidden; border: 0.5px solid var(--border); }
-    .dir-opt { flex: 1; padding: 12px; text-align: center; font-size: 14px; cursor: pointer; color: var(--text3); transition: all 0.15s; }
-    .dir-opt.in-active { background: var(--green-bg); color: var(--green); }
-    .dir-opt.out-active { background: var(--red-bg); color: var(--red); }
+    .dir-opt { flex: 1; padding: 12px; text-align: center; font-size: 15px; cursor: pointer; color: var(--text3); transition: all 0.15s; }
+    .dir-opt.in-active { background: var(--green-bg); color: var(--green); font-weight: bold; }
+    .dir-opt.out-active { background: var(--red-bg); color: var(--red); font-weight: bold; }
     .weight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .wf { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 11px; padding: 10px 13px; transition: border-color 0.15s; }
+    .wf { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 11px; padding: 12px 13px; transition: border-color 0.15s; }
     .wf.hl { border-color: var(--gold); background: #1c1600; }
-    .wf-label { font-size: 10px; color: var(--text3); margin-bottom: 5px; }
-    .wf.hl .wf-label { color: var(--gold-dark); }
-    .wf-input { background: transparent; border: none; outline: none; color: var(--text); font-size: 16px; font-weight: 500; width: 100%; font-family: inherit; }
+    .wf-label { font-size: 12px; color: var(--text3); margin-bottom: 5px; }
+    .wf.hl .wf-label { color: var(--gold-dark); font-weight: bold; }
+    .wf-input { background: transparent; border: none; outline: none; color: var(--text); font-size: 18px; font-weight: bold; width: 100%; font-family: inherit; }
     .wf.hl .wf-input { color: var(--gold-light); }
-    .form-error { color: var(--red); font-size: 12px; margin-top: 4px; min-height: 18px; }
+    .form-error { color: var(--red); font-size: 13px; margin-top: 4px; min-height: 18px; }
     .btn-row { display: flex; gap: 10px; margin-top: 8px; padding-bottom: 16px; }
-    .btn-clear { background: var(--bg3); color: var(--text2); border: 0.5px solid var(--border); border-radius: 12px; padding: 14px; font-size: 15px; cursor: pointer; font-family: inherit; flex: 0 0 80px; -webkit-appearance: none; }
+    .btn-clear { background: var(--bg3); color: var(--text); border: 0.5px solid var(--border); border-radius: 12px; padding: 14px; font-size: 16px; cursor: pointer; font-family: inherit; flex: 0 0 80px; -webkit-appearance: none; }
 
     /* History */
     .history-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
-    .filter-bar { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .filter-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
     .filter-bar::-webkit-scrollbar { display: none; }
-    .fpill { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12px; color: var(--text2); cursor: pointer; white-space: nowrap; flex-shrink: 0; }
-    .fpill.active { background: #1c1600; border-color: var(--gold); color: var(--gold-light); }
+    .fpill { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 20px; padding: 8px 16px; font-size: 14px; color: var(--text2); cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+    .fpill.active { background: #1c1600; border-color: var(--gold); color: var(--gold-light); font-weight: bold; }
 
     /* Converter */
     .conv-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
     .conv-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
-    .conv-card-title { font-size: 13px; color: var(--gold); margin-bottom: 14px; font-weight: 500; }
+    .conv-card-title { font-size: 15px; color: var(--gold); margin-bottom: 14px; font-weight: bold; }
     .conv-row { margin-bottom: 12px; }
-    .conv-row-label { font-size: 11px; color: var(--text3); margin-bottom: 5px; }
-    .conv-input { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 9px; padding: 11px 13px; color: var(--text); font-size: 16px; font-weight: 500; outline: none; font-family: inherit; -webkit-appearance: none; transition: border-color 0.15s; }
+    .conv-row-label { font-size: 13px; color: var(--text2); margin-bottom: 5px; }
+    .conv-input { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 9px; padding: 12px 14px; color: var(--text); font-size: 18px; font-weight: bold; outline: none; font-family: inherit; -webkit-appearance: none; transition: border-color 0.15s; }
     .conv-input:focus { border-color: var(--gold); }
     .conv-input.hl { border-color: var(--gold); background: #1c1600; color: var(--gold-light); }
     .price-links { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 14px; padding: 14px; }
-    .price-links-title { font-size: 12px; color: var(--text3); margin-bottom: 10px; }
+    .price-links-title { font-size: 14px; color: var(--text2); margin-bottom: 10px; }
     .link-row { display: flex; gap: 10px; }
-    .link-btn { flex: 1; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 8px; text-align: center; font-size: 13px; color: var(--gold); text-decoration: none; display: block; }
+    .link-btn { flex: 1; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px; padding: 14px 8px; text-align: center; font-size: 14px; color: var(--gold); text-decoration: none; display: block; font-weight: 500; }
     .link-btn:active { background: var(--bg4); }
 
     /* Profile */
     .profile-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
     .profile-hero { text-align: center; padding: 24px 0 22px; }
-    .profile-avatar-big { width: 74px; height: 74px; border-radius: 50%; background: #2a1f00; border: 2px solid var(--gold); display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 500; color: var(--gold); margin: 0 auto 12px; }
-    .profile-name { font-size: 18px; color: var(--text); font-weight: 500; }
-    .profile-email { font-size: 13px; color: var(--text3); margin-top: 4px; }
-    .menu-item { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+    .profile-avatar-big { width: 80px; height: 80px; border-radius: 50%; background: #2a1f00; border: 2px solid var(--gold); display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: bold; color: var(--gold); margin: 0 auto 12px; }
+    .profile-name { font-size: 20px; color: var(--text); font-weight: bold; }
+    .profile-email { font-size: 14px; color: var(--text3); margin-top: 6px; }
+    .menu-item { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
     .menu-item:active { background: var(--bg3); }
     .mi-left { display: flex; align-items: center; gap: 12px; }
-    .mi-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; }
-    .mi-label { font-size: 14px; color: var(--text); }
-    .mi-arrow { color: var(--text3); font-size: 18px; }
-    .btn-logout { width: 100%; background: var(--red-bg); border: 1px solid rgba(229,107,78,0.4); border-radius: 12px; padding: 15px; color: var(--red); font-size: 15px; cursor: pointer; font-family: inherit; margin-top: 6px; -webkit-appearance: none; }
+    .mi-icon { width: 40px; height: 40px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .mi-label { font-size: 15px; color: var(--text); font-weight: 500; }
+    .mi-arrow { color: var(--text3); font-size: 20px; }
+    .btn-logout { width: 100%; background: var(--red-bg); border: 1px solid rgba(229,107,78,0.4); border-radius: 12px; padding: 16px; color: var(--red); font-size: 16px; font-weight: bold; cursor: pointer; font-family: inherit; margin-top: 10px; -webkit-appearance: none; }
     .btn-logout:active { opacity: 0.7; }
 
     /* Toast */
-    #toast { position: fixed; bottom: calc(82px + var(--sab)); left: 50%; transform: translateX(-50%) translateY(16px); background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px; padding: 10px 20px; font-size: 13px; color: var(--text); opacity: 0; transition: all 0.25s; z-index: 99; white-space: nowrap; pointer-events: none; }
+    #toast { position: fixed; bottom: calc(82px + var(--sab)); left: 50%; transform: translateX(-50%) translateY(16px); background: var(--text); border: none; border-radius: 10px; padding: 12px 24px; font-size: 15px; font-weight: bold; color: var(--bg); opacity: 0; transition: all 0.25s; z-index: 99; white-space: nowrap; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    #toast.success { border-color: var(--green); color: var(--green); }
-    #toast.error { border-color: var(--red); color: var(--red); }
+    #toast.success { background: var(--green); color: #fff; }
+    #toast.error { background: var(--red); color: #fff; }
   </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- Loading -->
   <div id="loading">
     <div class="logo-wrap">
       <div class="lbma-bar">
@@ -227,7 +234,6 @@
     <div class="loading-dots"><span></span><span></span><span></span></div>
   </div>
 
-  <!-- Auth Screen -->
   <div id="auth-screen" class="screen no-nav">
     <div class="auth-hero">
       <div class="logo-wrap">
@@ -279,10 +285,8 @@
     </div>
   </div>
 
-  <!-- Main App -->
   <div id="main-app" style="display:none;">
 
-    <!-- Home/Dashboard -->
     <div id="screen-home" class="screen active">
       <div class="app-header">
         <div class="header-logo-mini">
@@ -329,11 +333,10 @@
       </div>
     </div>
 
-    <!-- History -->
     <div id="screen-history" class="screen">
       <div class="app-header">
         <span class="header-title">交易紀錄</span>
-        <div style="width:33px;"></div>
+        <div style="width:35px;"></div>
       </div>
       <div class="history-scroll">
         <div class="filter-bar" id="filter-bar">
@@ -349,11 +352,10 @@
       </div>
     </div>
 
-    <!-- Add Transaction -->
     <div id="screen-add" class="screen">
       <div class="app-header">
         <span class="header-title">新增交易</span>
-        <div style="width:33px;"></div>
+        <div style="width:35px;"></div>
       </div>
       <div class="form-scroll">
         <div class="form-group">
@@ -402,11 +404,10 @@
       </div>
     </div>
 
-    <!-- Converter -->
     <div id="screen-converter" class="screen">
       <div class="app-header">
         <span class="header-title">重量換算</span>
-        <div style="width:33px;"></div>
+        <div style="width:35px;"></div>
       </div>
       <div class="conv-scroll">
         <div class="conv-card">
@@ -427,11 +428,10 @@
       </div>
     </div>
 
-    <!-- Profile -->
     <div id="screen-profile" class="screen">
       <div class="app-header">
         <span class="header-title">帳號設定</span>
-        <div style="width:33px;"></div>
+        <div style="width:35px;"></div>
       </div>
       <div class="profile-scroll">
         <div class="profile-hero">
@@ -451,7 +451,6 @@
       </div>
     </div>
 
-    <!-- Bottom Nav -->
     <nav class="bottom-nav">
       <div class="nav-btn active" id="nb-home" onclick="goScreen('home')">
         <div class="nav-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect class="nav-icon-svg" x="3" y="3" width="7" height="7" rx="1.5" stroke-width="1.8"/><rect class="nav-icon-svg" x="14" y="3" width="7" height="7" rx="1.5" stroke-width="1.8"/><rect class="nav-icon-svg" x="3" y="14" width="7" height="7" rx="1.5" stroke-width="1.8"/><rect class="nav-icon-svg" x="14" y="14" width="7" height="7" rx="1.5" stroke-width="1.8"/></svg></div>
@@ -479,7 +478,7 @@
 <div id="toast"></div>
 
 <script>
-// Firebase config (from your project)
+// Firebase config (從您的專案取得)
 const firebaseConfig = {
   apiKey: "AIzaSyC6bE5RWW8sXkR4flSD-wdGamwyyTFJoSs",
   authDomain: "gold-inventory-app-a9eaf.firebaseapp.com",
@@ -522,7 +521,6 @@ auth.onAuthStateChanged(u => {
   }
 });
 
-// Auth tab
 function switchAuthTab(tab) {
   document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', i === (tab==='login'?0:1)));
   document.getElementById('login-form').style.display = tab==='login' ? 'block' : 'none';
@@ -566,7 +564,6 @@ async function doGoogleLogin() {
 
 async function doLogout() { await auth.signOut(); toast('已登出'); }
 
-// Navigation
 const SCREENS = ['home','history','add','converter','profile'];
 const NAV_IDS = ['home','history',null,'converter','profile'];
 function goScreen(name) {
@@ -575,7 +572,6 @@ function goScreen(name) {
   if (name==='history') renderHistory();
 }
 
-// Firestore
 function txCol() { return db.collection('users').doc(user.uid).collection('transactions'); }
 
 function subTx() {
@@ -618,7 +614,17 @@ async function doSubmit() {
   finally { btn.disabled = false; btn.textContent = '確認寫入紀錄'; }
 }
 
-// Dashboard
+// 刪除資料函式 (新增)
+async function deleteTx(id) {
+  if (!confirm('確定要刪除這筆紀錄嗎？\n(刪除後總庫存會自動重新計算)')) return;
+  try {
+    await txCol().doc(id).delete();
+    toast('紀錄已刪除，庫存已更新！', 'success');
+  } catch(err) {
+    toast('刪除失敗：' + err.message, 'error');
+  }
+}
+
 function refreshDash() {
   const sorted = [...allTx].sort((a,b) => (a.timestamp?.seconds||0)-(b.timestamp?.seconds||0));
   let totW = 0, totC = 0;
@@ -661,10 +667,16 @@ function txCard(tx) {
   else if (tx.amount > 0) { wStr = (tx.cDir==='收入'?'+':'-') + 'NT$' + tx.amount.toLocaleString(); wCls = tx.cDir==='收入'?'in':'out'; }
   const dateStr = tx.date ? new Date(tx.date).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
   const meta = [dateStr, tx.target].filter(Boolean).join(' · ');
-  return `<div class="tx-item"><div class="tx-dot ${dotCls}" style="color:${isIn?'var(--green)':'var(--red)'};">${icon}</div><div class="tx-info"><div class="tx-type">${tx.type}</div><div class="tx-meta">${meta||'無備註'}</div></div><div class="tx-right"><div class="tx-wt ${wCls}">${wStr}</div>${tx.note?`<div class="tx-sub">${tx.note}</div>`:''}</div></div>`;
+  
+  // 在卡片右側加入刪除按鈕
+  return `<div class="tx-item">
+            <div class="tx-dot ${dotCls}" style="color:${isIn?'var(--green)':'var(--red)'};">${icon}</div>
+            <div class="tx-info"><div class="tx-type">${tx.type}</div><div class="tx-meta">${meta||'無備註'}</div></div>
+            <div class="tx-right"><div class="tx-wt ${wCls}">${wStr}</div>${tx.note?`<div class="tx-sub">${tx.note}</div>`:''}</div>
+            <div class="tx-actions"><button class="btn-del" onclick="deleteTx('${tx.id}')">🗑️</button></div>
+          </div>`;
 }
 
-// History
 function renderHistory() {
   const filtered = curFilter==='全部' ? allTx : allTx.filter(t=>t.type===curFilter);
   const el = document.getElementById('history-list');
@@ -679,7 +691,6 @@ function setFilter(f, el) {
   renderHistory();
 }
 
-// Form logic
 const TYPE_MAP = { '一般進貨':{w:'入庫',c:'支出'},'舊金回收':{w:'入庫',c:'支出'},'成品繳庫':{w:'入庫',c:'支出'},'一般銷售':{w:'出庫',c:'收入'},'師傅領料':{w:'出庫',c:'支出'},'損耗核銷':{w:'出庫',c:'支出'} };
 
 function pickType(type, el) {
@@ -708,7 +719,6 @@ function clearForm() {
   pickType('一般進貨', document.querySelector('.type-pill'));
 }
 
-// Weight sync
 const G_PER_M = 3.75, M_PER_T = 10, M_PER_OZ = 31.1034768/3.75;
 function syncW(src) {
   if (fState.sync) return; fState.sync = true;
@@ -739,24 +749,59 @@ function syncCV(src) {
   fState.sync = false;
 }
 
-// Export CSV
+// 依照需求重新規劃匯出功能 (新增累加計算)
 function doExport() {
   if (!allTx.length) { toast('尚無資料可匯出', 'error'); return; }
-  const h = ['交易日期','交易類別','重量動向','重量(台錢)','重量(公克)','現金動向','金額(NT$)','參考牌價','交易對象','備註'];
-  const rows = [...allTx].sort((a,b)=>(a.timestamp?.seconds||0)-(b.timestamp?.seconds||0)).map(tx=>[
-    tx.date?new Date(tx.date).toLocaleString('zh-TW'):'',
-    tx.type,tx.wDir,tx.mace,tx.gram,tx.cDir,tx.amount,tx.price,tx.target,tx.note
-  ]);
-  const csv = '\uFEFF' + [h,...rows].map(r=>r.map(v=>`"${v||''}"`).join(',')).join('\n');
+  
+  // 建立您指定的表頭 Title
+  const h = ['交易序號', '交易日期', '交易類別', '出庫/入庫(台錢)', '出庫重量(台錢)', '入庫重量(台錢)', '庫存總重(台錢)', '出庫金額', '入庫金額', '結餘金額', '參考牌價', '交易對象', '備註'];
+  
+  // 先將資料依時間「從舊到新」排序，才能正確計算歷史累加總庫存
+  const sorted = [...allTx].sort((a,b)=>(a.timestamp?.seconds||0)-(b.timestamp?.seconds||0));
+  
+  let runW = 0; // 追蹤累加重量
+  let runC = 0; // 追蹤累加金額
+
+  const rows = sorted.map((tx, index) => {
+    const dateStr = tx.date ? new Date(tx.date).toLocaleString('zh-TW', {hour12: false}) : '';
+    const inW = tx.wDir === '入庫' ? (tx.mace || 0) : 0;
+    const outW = tx.wDir === '出庫' ? (tx.mace || 0) : 0;
+    const inC = tx.cDir === '收入' ? (tx.amount || 0) : 0;
+    const outC = tx.cDir === '支出' ? (tx.amount || 0) : 0;
+
+    // 計算當下總結餘
+    runW = runW + inW - outW;
+    runC = runC + inC - outC;
+
+    return [
+      index + 1,             // 交易序號
+      dateStr,               // 交易日期
+      tx.type || '',         // 交易類別
+      tx.wDir || '',         // 出庫/入庫
+      outW > 0 ? outW : '',  // 出庫重量
+      inW > 0 ? inW : '',    // 入庫重量
+      runW.toFixed(3),       // 庫存總重 (累加)
+      outC > 0 ? outC : '',  // 出庫金額 (您表格裡的支出)
+      inC > 0 ? inC : '',    // 入庫金額 (您表格裡的收入)
+      runC,                  // 結餘金額 (累加)
+      tx.price || '',        // 參考牌價
+      tx.target || '',       // 交易對象
+      tx.note || ''          // 備註
+    ];
+  });
+  
+  // 轉成 CSV 格式並加上 UTF-8 BOM，防止 Excel 開啟亂碼
+  const csv = '\uFEFF' + [h,...rows].map(r=>r.map(v=>`"${v!==undefined?v:''}"`).join(',')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
-  a.download = '黃金庫存紀錄_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.download = '貴金屬庫存紀錄_'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();
-  toast('CSV 已匯出！', 'success');
+  toast('CSV 報表已成功匯出！', 'success');
 }
 
+// 修改 About 內容
 function showAbout() {
-  alert('黃金庫存管理系統\n版本 v1.0.0\n\nLBMA 標準介面 · 個人私密庫存追蹤\n資料儲存於 Firebase 雲端，帳號完全隔離。\n\n© 2026 Edison.lin');
+  alert('貴金屬出入庫存系統 v1.0.0\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
