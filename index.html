@@ -247,6 +247,13 @@
     .backup-banner-text { font-size: 13px; line-height: 1.4; color: var(--text2); }
     .btn-backup { background: var(--red); color: #fff; border: none; border-radius: 8px; padding: 8px 12px; font-size: 13px; font-weight: bold; cursor: pointer; flex-shrink: 0; margin-left: 10px; }
 
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+    .modal-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 24px; width: 100%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .modal-title { font-size: 18px; color: var(--gold-light); font-weight: bold; margin-bottom: 12px; }
+    .modal-text { font-size: 14px; color: var(--text2); line-height: 1.5; margin-bottom: 20px; text-align: left; }
+    .modal-btn { width: 100%; background: var(--gold); color: #000; border: none; padding: 12px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
+
     /* Toast */
     #toast { position: fixed; bottom: calc(82px + var(--sab)); left: 50%; transform: translateX(-50%) translateY(16px); background: var(--text); border: none; border-radius: 10px; padding: 12px 24px; font-size: 15px; font-weight: bold; color: var(--bg); opacity: 0; transition: all 0.25s; z-index: 99; white-space: nowrap; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -591,6 +598,20 @@
       </div>
     </div>
 
+    <div class="modal-overlay" id="export-modal">
+        <div class="modal-box">
+            <div class="modal-title">備份下載成功！</div>
+            <div class="modal-text">
+                檔案名稱：<br><b>貴金屬庫存紀錄_YYYY-MM-DD.xlsx</b><br><br>
+                <b>尋找檔案方式：</b><br>
+                📱 <b>iOS (iPhone)：</b>請開啟「檔案」App ➔ 點選「下載項目」資料夾。<br><br>
+                📱 <b>Android (安卓)：</b>請開啟「檔案/我的檔案」App ➔ 點選「下載」資料夾。<br><br>
+                💻 <b>電腦版：</b>請至瀏覽器的「下載」資料夾查看。
+            </div>
+            <button class="modal-btn" onclick="closeExportModal()">我知道了</button>
+        </div>
+    </div>
+
     <nav class="bottom-nav">
       <div class="nav-btn active" id="nb-home" onclick="goScreen('home')">
         <div class="nav-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect class="nav-icon-svg" x="3" y="3" width="7" height="7" rx="1.5" stroke-width="1.8"/><rect class="nav-icon-svg" x="14" y="3" width="7" height="7" rx="1.5" stroke-width="1.8"/><rect class="nav-icon-svg" x="3" y="14" width="7" height="7" rx="1.5" stroke-width="1.8"/><rect class="nav-icon-svg" x="14" y="14" width="7" height="7" rx="1.5" stroke-width="1.8"/></svg></div>
@@ -656,6 +677,7 @@ const db = firebase.firestore();
 
 // State & Cache
 let user = null;
+let allTx = []; // 僅供匯出備份使用
 let recentTx = []; // 首頁專用：最新 30 筆快取
 let historyTx = []; // 歷史專用：依據所選區間抓取的資料
 let curFilter = '全部';
@@ -1223,7 +1245,7 @@ function toggleSelectTx(id) {
         batchSelectedIds.add(id);
     }
     updateBatchCount();
-    renderHistory(); 
+    renderHistory(); // 重新渲染以更新打勾狀態
 }
 
 function updateBatchCount() {
@@ -1253,6 +1275,7 @@ async function executeBatchDelete() {
         } else {
             await Promise.all(promises);
             if (!isLimitBypassed()) incrementActionCount('delete', batchSelectedIds.size);
+            // 線上模式：刪除後呼叫背景重算並自動覆蓋
             autoHealStats(); 
             toast(`已成功刪除 ${batchSelectedIds.size} 筆紀錄！`, 'success');
             toggleBatchDelete(); 
@@ -1296,6 +1319,7 @@ function editTx(id) {
 }
 
 function showDetail(id) {
+  // 如果在批次刪除模式，點擊卡片變成選取
   if (isBatchDeleteMode) {
       toggleSelectTx(id);
       return;
@@ -1400,6 +1424,7 @@ function txCard(tx) {
   
   const meta = [dateStr, tx.target].filter(Boolean).join(' · ');
   
+  // ★ 批次刪除模式的卡片操作區
   let actionArea = `
       <div class="tx-actions">
         <button class="btn-action" onclick="event.stopPropagation(); editTx('${tx.id}')">✏️</button>
@@ -1622,6 +1647,11 @@ function calcValue() {
   document.getElementById('cv-total').textContent = 'NT$ ' + total.toLocaleString();
 }
 
+// 關閉 Modal 的函數
+function closeExportModal() {
+    document.getElementById('export-modal').style.display = 'none';
+}
+
 async function doExport() {
   if (!navigator.onLine) {
       alert('⚠️ 離線狀態下無法執行完整匯出備份，請恢復網路連線後再試。');
@@ -1662,7 +1692,10 @@ async function doExport() {
       localStorage.setItem('lastBackupDate', Date.now());
       checkBackupReminder();
       if (!isLimitBypassed()) incrementActionCount('export');
-      toast('Excel 報表已成功匯出！', 'success');
+      
+      // 顯示教學 Modal
+      document.getElementById('export-modal').style.display = 'flex';
+      
   } catch(e) {
       toast('匯出失敗：' + e.message, 'error');
   }
@@ -1796,7 +1829,7 @@ async function doImport(event) {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.08\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.09\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
