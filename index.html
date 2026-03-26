@@ -22,6 +22,7 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --gold: #c9a84c; --gold-light: #f0d78c; --gold-dark: #8a6a00;
+      /* ★ 深色模式微調：讓背景更有層次，不再死黑 */
       --bg: #0d0d0d; --bg2: #1c1c1e; --bg3: #2c2c2e; --bg4: #3a3a3c;
       --text: #ffffff; --text2: #e0e0e0; --text3: #a0a0a5;
       --green: #32d74b; --green-bg: #0a2416; --red: #ff453a; --red-bg: #2b0d0d;
@@ -153,9 +154,6 @@
     .chart-ranges { display: flex; gap: 6px; margin-bottom: 12px; justify-content: center; }
     .cr-btn { flex: 1; padding: 6px; background: var(--bg3); color: var(--text2); border: 0.5px solid var(--border); border-radius: 8px; font-size: 12px; cursor: pointer; text-align: center; transition: 0.2s; }
     .cr-btn.active { background: var(--gold); color: #000; font-weight: bold; border-color: var(--gold); }
-
-    /* ★ 時間區間下拉選單 (Time-Boxing) */
-    .month-selector { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--gold-light); font-size: 15px; font-weight: bold; outline: none; margin-bottom: 12px; font-family: inherit; -webkit-appearance: none; cursor: pointer; text-align: center; }
 
     .search-bar { margin-bottom: 12px; }
     .search-input { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 14px 12px 38px; color: var(--text); font-size: 15px; outline: none; background-image: url('data:image/svg+xml;utf8,<svg fill="%23a0a0a5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'); background-repeat: no-repeat; background-position: 10px center; background-size: 20px; transition: border-color 0.2s; }
@@ -404,9 +402,6 @@
           </div>
           <canvas id="trendChart" height="180"></canvas>
         </div>
-        
-        <select class="month-selector" id="month-selector" onchange="subTx()">
-          </select>
 
         <div class="search-bar">
           <input type="text" class="search-input" id="search-input" placeholder="搜尋交易對象、備註或類別..." oninput="onSearchInput()">
@@ -671,21 +666,6 @@ function incrementActionCount(actionType) {
   localStorage.setItem(`action_${actionType}`, JSON.stringify({ date: today, count: count + 1 }));
 }
 
-// 產生時間選單
-function initMonthSelector() {
-  const selector = document.getElementById('month-selector');
-  const now = new Date();
-  let html = '<option value="recent">預設：最近 30 筆</option>';
-  
-  // 產生過去 12 個月的選項
-  for (let i = 0; i < 12; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const monthStr = d.toISOString().slice(0,7); // YYYY-MM
-    html += `<option value="${monthStr}">${monthStr} 紀錄</option>`;
-  }
-  selector.innerHTML = html;
-}
-
 // Auth listener
 auth.onAuthStateChanged(u => {
   document.getElementById('loading').style.display = 'none';
@@ -704,9 +684,8 @@ auth.onAuthStateChanged(u => {
     document.getElementById('auth-screen').classList.remove('active');
     document.getElementById('main-app').style.display = 'block';
     
-    initMonthSelector();
     clearForm(); 
-    subTx(); // 預設拉取近期資料
+    subTx(); // 全域拉取
   } else {
     user = null;
     if (unsubTx) { unsubTx(); unsubTx = null; }
@@ -825,38 +804,16 @@ function setStockAlert() {
 
 function txCol() { return db.collection('users').doc(user.uid).collection('transactions'); }
 
-// ★ 核心優化：Time-boxing 與按需載入
+// ★ 恢復全域拉取，以確保總數與圖表計算準確
 function subTx() {
   if (unsubTx) unsubTx();
   
-  const mode = document.getElementById('month-selector') ? document.getElementById('month-selector').value : 'recent';
+  // 移除 limit(30)，恢復全量拉取
   let query = txCol().orderBy('timestamp','desc');
-
-  if (mode === 'recent') {
-    // 預設載入近 30 筆
-    query = query.limit(30);
-  } else {
-    // 載入特定月份 (例如 '2026-03')
-    const startStr = `${mode}-01T00:00:00.000Z`;
-    const startDate = new Date(startStr);
-    
-    // 計算下個月的第一天
-    const endYear = startDate.getMonth() === 11 ? startDate.getFullYear() + 1 : startDate.getFullYear();
-    const endMonth = startDate.getMonth() === 11 ? 0 : startDate.getMonth() + 1;
-    const endDate = new Date(endYear, endMonth, 1);
-
-    query = query.where('timestamp', '>=', firebase.firestore.Timestamp.fromDate(startDate))
-                 .where('timestamp', '<', firebase.firestore.Timestamp.fromDate(endDate));
-  }
-
-  // 顯示載入中
-  document.getElementById('history-list').innerHTML = '<div class="empty-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
 
   unsubTx = query.onSnapshot(snap => {
     allTx = snap.docs.map(d => ({id: d.id, ...d.data()}));
     
-    // ⚠️ 注意：因為只有部分資料，首頁的「總庫存」與「結餘」可能不準確
-    // 實務上商業軟體會另外用一個 collection 專門存 Total 數值，此處先維持原本的累加顯示區間數值
     refreshDash();
     renderHistory();
     
@@ -864,7 +821,6 @@ function subTx() {
     if(document.getElementById('screen-daily').classList.contains('active')) renderDailySummary();
   }, err => { 
     console.error(err); 
-    // 若缺乏索引，會出現提示需要建立 Firebase Index
     if(err.message.includes('index')) {
        toast('正在建立遠端索引，請稍後...', '');
     }
@@ -946,17 +902,13 @@ async function deleteAllTx() {
     alert('⚠️ 操作受限\n為了保護雲端資料庫資源，每天限制執行「清除所有紀錄」最多 3 次。\n\n您今日的額度已用盡，請於明日再試。');
     return;
   }
-
-  // ⚠️ 防呆警告：因為實作了分頁，所以提醒使用者只會刪除目前看得到的
-  const mode = document.getElementById('month-selector').value;
-  const modeText = mode === 'recent' ? '最近 30 筆' : `${mode} 月份`;
   
   if (allTx.length === 0) {
     toast(`目前沒有任何紀錄可清除`, 'error');
     return;
   }
   
-  const msg = `⚠️ 警告：您即將永久清除目前顯示的【${modeText}】交易紀錄！\n\n強烈建議您在執行此操作前先匯出備份。\n\n(今日尚可執行次數：${3 - count} 次)\n請問確定要繼續刪除嗎？`;
+  const msg = `⚠️ 警告：您即將永久清除所有的交易紀錄！\n\n強烈建議您在執行此操作前先匯出備份。\n\n(今日尚可執行次數：${3 - count} 次)\n請問確定要繼續刪除嗎？`;
   if (!confirm(msg)) return;
 
   const confirm2 = confirm('此操作無法復原！再次確認是否「清除」？');
@@ -1059,7 +1011,7 @@ function refreshDash() {
     sWeightEl.textContent = totW.toFixed(3);
   }
 
-  document.getElementById('s-weight-sub').textContent = `區間約 ${(totW/10).toFixed(4)} 兩 │ ${(totW*3.75).toFixed(3)} g`;
+  document.getElementById('s-weight-sub').textContent = `約 ${(totW/10).toFixed(4)} 兩 │ ${(totW*3.75).toFixed(3)} g`;
   document.getElementById('s-balance').textContent = 'NT$' + totC.toLocaleString();
   
   const today = new Date().toISOString().slice(0,10);
@@ -1188,7 +1140,7 @@ function drawChart() {
     data: {
       labels: labels,
       datasets: [{
-        label: '區間趨勢(台錢)',
+        label: '總庫存(台錢)',
         data: data,
         borderColor: '#c9a84c',
         backgroundColor: 'rgba(201,168,76,0.15)',
@@ -1239,7 +1191,7 @@ function renderHistory() {
 
   const el = document.getElementById('history-list');
   if (filtered.length === 0) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">無資料，請嘗試切換月份</div></div>';
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">無資料</div></div>';
     return;
   }
 
@@ -1408,7 +1360,7 @@ function calcValue() {
 function doExport() {
   if (!allTx.length) { toast('尚無資料可匯出', 'error'); return; }
   
-  const h = ['交易序號', '交易日期', '交易類別', '出庫/入庫(台錢)', '出庫重量(台錢)', '入庫重量(台錢)', '區間總重(台錢)', '出庫金額', '入庫金額', '區間結餘', '參考牌價', '交易對象', '備註', '狀態'];
+  const h = ['交易序號', '交易日期', '交易類別', '出庫/入庫(台錢)', '出庫重量(台錢)', '入庫重量(台錢)', '庫存總重(台錢)', '出庫金額', '入庫金額', '結餘金額', '參考牌價', '交易對象', '備註', '狀態'];
   const sorted = [...allTx].sort((a,b)=>(a.timestamp?.seconds||0)-(b.timestamp?.seconds||0));
   
   let runW = 0; let runC = 0;
@@ -1558,10 +1510,6 @@ async function doImport(event) {
       incrementActionCount('import');
       alert(`匯入完成！成功還原 ${importedCount} 筆紀錄。`);
       
-      // 重新載入最新區間
-      const selector = document.getElementById('month-selector');
-      if (selector) selector.value = 'recent';
-      subTx();
       goScreen('home'); 
       
     } catch(err) {
