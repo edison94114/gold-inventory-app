@@ -708,6 +708,7 @@ function goBackToList() {
   goScreen(lastScreen);
 }
 
+// ★ 更新：專業級系統說明重構
 function showInstructions() {
   alert('【貴金屬庫存管理系統 - 操作指南】\n\n' +
         '本系統專為精準追蹤庫存與資金雙軌設計。\n\n' +
@@ -1090,14 +1091,15 @@ function setFilter(f, el) {
   renderHistory();
 }
 
+// ★ 更新：設定強制防呆邏輯
 const TYPE_MAP = { 
-  '期初設定':{w:'入庫',c:'收入'},
-  '一般進貨':{w:'入庫',c:'支出'},
-  '舊金回收':{w:'入庫',c:'支出'},
-  '成品繳庫':{w:'入庫',c:'支出'},
-  '一般銷售':{w:'出庫',c:'收入'},
-  '師傅領料':{w:'出庫',c:'支出'},
-  '損耗核銷':{w:'出庫',c:'支出'} 
+  '期初設定': { w: '入庫', c: '收入', lock: false },
+  '一般進貨': { w: '入庫', c: '支出', lock: true },
+  '一般銷售': { w: '出庫', c: '收入', lock: true },
+  '舊金回收': { w: '入庫', c: '支出', lock: true },
+  '師傅領料': { w: '出庫', c: '支出', lock: true },
+  '成品繳庫': { w: '入庫', c: '支出', lock: true },
+  '損耗核銷': { w: '出庫', c: '支出', lock: true } 
 };
 
 function pickType(type, el) {
@@ -1105,19 +1107,36 @@ function pickType(type, el) {
   el.classList.add('active');
   fState.type = type;
   const d = TYPE_MAP[type];
-  if (d) { setWDir(d.w); setCDir(d.c); }
+  if (d) { 
+    setWDir(d.w); 
+    setCDir(d.c); 
+    
+    // ★ 執行防呆視覺鎖定 (鎖定不合邏輯的選項)
+    const wIn = document.getElementById('wd-in');
+    const wOut = document.getElementById('wd-out');
+    const cIn = document.getElementById('cd-in');
+    const cOut = document.getElementById('cd-out');
+    
+    wIn.classList.remove('locked'); wOut.classList.remove('locked');
+    cIn.classList.remove('locked'); cOut.classList.remove('locked');
+    
+    if (d.lock) {
+      if (d.w === '入庫') wOut.classList.add('locked'); else wIn.classList.add('locked');
+      if (d.c === '收入') cOut.classList.add('locked'); else cIn.classList.add('locked');
+    }
+  }
 }
 
 function setWDir(d) {
   fState.wDir = d;
-  document.getElementById('wd-in').className = 'dir-opt'+(d==='入庫'?' in-active':'');
-  document.getElementById('wd-out').className = 'dir-opt'+(d==='出庫'?' out-active':'');
+  document.getElementById('wd-in').className = 'dir-opt' + (d==='入庫'?' in-active':'') + (document.getElementById('wd-in').classList.contains('locked')?' locked':'');
+  document.getElementById('wd-out').className = 'dir-opt' + (d==='出庫'?' out-active':'') + (document.getElementById('wd-out').classList.contains('locked')?' locked':'');
 }
 
 function setCDir(d) {
   fState.cDir = d;
-  document.getElementById('cd-in').className = 'dir-opt'+(d==='收入'?' in-active':'');
-  document.getElementById('cd-out').className = 'dir-opt'+(d==='支出'?' out-active':'');
+  document.getElementById('cd-in').className = 'dir-opt' + (d==='收入'?' in-active':'') + (document.getElementById('cd-in').classList.contains('locked')?' locked':'');
+  document.getElementById('cd-out').className = 'dir-opt' + (d==='支出'?' out-active':'') + (document.getElementById('cd-out').classList.contains('locked')?' locked':'');
 }
 
 function getNowLocal() {
@@ -1135,7 +1154,7 @@ function clearForm() {
   document.getElementById('f-err').textContent = '';
   
   const pills = document.querySelectorAll('.type-pill');
-  let targetPill = pills[1]; 
+  let targetPill = pills[1]; // 一般進貨
   pickType('一般進貨', targetPill);
 }
 
@@ -1239,17 +1258,17 @@ async function doImport(event) {
   reader.onload = async (e) => {
     try {
       const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
+      const workbook = XLSX.read(data, { type: 'array', cellDates: true });
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
-      const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      const json = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
       
       if (json.length < 2) {
-        toast('檔案無資料', 'error');
+        alert('匯入失敗：檔案中沒有發現資料列！');
         return;
       }
 
-      toast('開始匯入，請稍候...', '');
+      toast('開始讀取並匯入，請稍候...', '');
       
       let count = 0;
       const promises = [];
@@ -1258,12 +1277,23 @@ async function doImport(event) {
         const row = json[i];
         if (!row || row.length === 0) continue;
 
-        const dateStr = row[1];
+        let dateVal = row[1];
         const type = row[2];
-        if(!dateStr || !type) continue; 
+        if(!dateVal || !type || type === '交易類別') continue; 
         
-        const txDate = new Date(dateStr.replace(/-/g, '/')); 
-        if (isNaN(txDate.getTime())) continue;
+        let txDate;
+        if (dateVal instanceof Date) {
+          txDate = dateVal;
+        } else if (typeof dateVal === 'number') {
+          txDate = new Date(Math.round((dateVal - 25569) * 86400 * 1000));
+        } else {
+          txDate = new Date(String(dateVal).replace(/-/g, '/').replace('T', ' ')); 
+        }
+
+        if (isNaN(txDate.getTime())) {
+          console.warn('略過無效日期的資料：', dateVal);
+          continue; 
+        }
 
         const outW = parseFloat(row[4]) || 0;
         const inW = parseFloat(row[5]) || 0;
@@ -1276,15 +1306,15 @@ async function doImport(event) {
         const cDir = inC > 0 ? '收入' : (outC > 0 ? '支出' : '');
 
         const statusText = row[13] || '';
-        const isEdited = statusText === '修改';
-        const isBackdated = statusText === '補登';
+        const isEdited = String(statusText).includes('修改');
+        const isBackdated = String(statusText).includes('補登');
 
         const txData = {
           timestamp: firebase.firestore.Timestamp.fromDate(txDate), 
           date: txDate.toISOString(),
           isBackdated: isBackdated,
           isEdited: isEdited,
-          type: type,
+          type: String(type).trim(),
           wDir: wDir,
           mace: mace,
           gram: +(mace * 3.75).toFixed(3),
@@ -1293,29 +1323,38 @@ async function doImport(event) {
           cDir: cDir,
           amount: amount,
           price: parseInt(row[10]) || 0,
-          target: row[11] || '',
-          note: row[12] || ''
+          target: String(row[11] || '').trim(),
+          note: String(row[12] || '').trim()
         };
         
         promises.push(txCol().add(txData));
         count++;
       }
       
+      if (count === 0) {
+        alert('匯入失敗：檔案中沒有發現可辨識的交易紀錄，請確保格式與系統匯出的 Excel 一致。');
+        return;
+      }
+
       await Promise.all(promises);
-      toast(`成功還原 ${count} 筆紀錄！`, 'success');
+      alert(`匯入完成！成功還原 ${count} 筆紀錄。`);
       goScreen('home'); 
       
     } catch(err) {
       console.error(err);
-      toast('檔案解析失敗，請確認是否為系統匯出的 Excel 檔', 'error');
+      alert('檔案解析發生例外錯誤：\n' + err.message);
     }
     
     event.target.value = ''; 
   };
+  
+  reader.onerror = () => {
+    alert('無法讀取檔案，請檢查檔案權限或稍後再試！');
+  };
+  
   reader.readAsArrayBuffer(file);
 }
 
-// ★ 更新：修正與包裝 v1.01 關於應用程式內容
 function showAbout() {
   alert('貴金屬出入庫存系統 v1.01\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
