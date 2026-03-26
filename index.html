@@ -22,10 +22,10 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --gold: #c9a84c; --gold-light: #f0d78c; --gold-dark: #8a6a00;
-      --bg: #0d0d0d; --bg2: #161616; --bg3: #1f1f1f; --bg4: #2a2a2a;
-      --text: #ffffff; --text2: #e0e0e0; --text3: #cccccc;
-      --green: #4ecb71; --green-bg: #0a2416; --red: #e56b4e; --red-bg: #2b0d0d;
-      --border: #333333;
+      --bg: #0d0d0d; --bg2: #1c1c1e; --bg3: #2c2c2e; --bg4: #3a3a3c;
+      --text: #ffffff; --text2: #e0e0e0; --text3: #a0a0a5;
+      --green: #32d74b; --green-bg: #0a2416; --red: #ff453a; --red-bg: #2b0d0d;
+      --border: #38383a;
       --sat: env(safe-area-inset-top, 0px);
       --sab: env(safe-area-inset-bottom, 0px);
     }
@@ -64,7 +64,7 @@
     .input-field { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 11px; padding: 14px; color: var(--text); font-size: 16px; outline: none; transition: border-color 0.2s; font-family: inherit; -webkit-appearance: none; }
     input[type="datetime-local"] { color-scheme: dark; }
     .input-field:focus { border-color: var(--gold); }
-    .btn-primary { width: 100%; background: linear-gradient(135deg, #c9a84c, #e8c96a); border: none; border-radius: 12px; padding: 15px; color: #1a1200; font-size: 17px; font-weight: bold; cursor: pointer; font-family: inherit; transition: opacity 0.2s; -webkit-appearance: none; display: block; }
+    .btn-primary { width: 100%; background: linear-gradient(135deg, #c9a84c, #e8c96a); border: none; border-radius: 12px; padding: 15px; color: #1a1200; font-size: 17px; font-weight: bold; cursor: pointer; font-family: inherit; transition: opacity 0.2s; -webkit-appearance: none; display: block; box-shadow: 0 4px 15px rgba(201,168,76,0.3); }
     .btn-primary:active { opacity: 0.8; }
     .btn-primary:disabled { opacity: 0.5; }
     .divider-or { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
@@ -96,23 +96,23 @@
     .nav-add-btn { width: 54px; height: 54px; border-radius: 50%; background: linear-gradient(135deg, #c9a84c, #f0d78c); display: flex; align-items: center; justify-content: center; position: relative; top: -18px; box-shadow: 0 4px 20px rgba(201,168,76,0.45); }
     .nav-add-label { font-size: 12px; color: var(--gold); font-weight: bold; margin-top: -14px; }
 
-    /* Dashboard */
+    /* Dashboard & Cards */
     .dash-scroll { overflow-y: auto; flex: 1; padding: 14px 14px 0; -webkit-overflow-scrolling: touch; }
     .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-    .stat-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 14px; padding: 14px 13px; }
-    .stat-card.gold-card { border-color: rgba(201,168,76,0.5); background: #161200; }
-    .stat-card.green-card { border-color: rgba(78,203,113,0.4); background: #0a1a0f; }
+    .stat-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 14px; padding: 14px 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .stat-card.gold-card { border-color: rgba(201,168,76,0.5); background: linear-gradient(145deg, #1f1a00, var(--bg2)); }
+    .stat-card.green-card { border-color: rgba(50,215,75,0.4); background: linear-gradient(145deg, #0a2416, var(--bg2)); }
     .stat-label { font-size: 13px; color: var(--text2); margin-bottom: 7px; font-weight: 500; }
     .stat-val { font-size: 24px; font-weight: bold; color: var(--gold-light); line-height: 1.1; word-break: break-all; }
     .stat-val.gv { color: var(--green); font-size: 22px; }
     .stat-unit { font-size: 12px; color: var(--text3); margin-top: 5px; }
-    .today-card { background: #141200; border: 0.5px solid rgba(201,168,76,0.3); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
-    .today-title { font-size: 12px; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; font-weight: bold; }
+    .today-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .today-title { font-size: 12px; color: var(--text2); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; font-weight: bold; border-bottom: 0.5px solid var(--border); padding-bottom: 6px; }
     .today-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; }
     .today-item { text-align: center; padding: 0 4px; }
     .today-item + .today-item { border-left: 0.5px solid var(--border); }
-    .ti-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
-    .ti-val { font-size: 14px; font-weight: bold; }
+    .ti-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+    .ti-val { font-size: 14px; font-weight: bold; color: var(--text); }
     .ti-val.in { color: var(--green); }
     .ti-val.out { color: var(--red); }
     .sec-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
@@ -120,12 +120,12 @@
     .sec-more { font-size: 13px; color: var(--gold); cursor: pointer; }
     
     /* Transaction Card */
-    .tx-item { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 11px 13px; display: flex; align-items: center; gap: 11px; margin-bottom: 8px; cursor: pointer; transition: background 0.15s; -webkit-tap-highlight-color: transparent; }
+    .tx-item { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 11px 13px; display: flex; align-items: center; gap: 11px; margin-bottom: 10px; cursor: pointer; transition: background 0.15s; -webkit-tap-highlight-color: transparent; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
     .tx-item:active { background: var(--bg3); }
     .tx-dot { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; background: var(--bg3); }
     .tx-info { flex: 1; min-width: 0; }
     .tx-type { font-size: 15px; font-weight: bold; color: var(--text); }
-    .tx-meta { font-size: 12px; color: var(--text2); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tx-meta { font-size: 12px; color: var(--text3); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .tx-right { text-align: right; flex-shrink: 0; }
     .tx-wt { font-size: 15px; font-weight: bold; }
     .tx-wt.in { color: var(--green); }
@@ -137,6 +137,8 @@
     .tx-actions { margin-left: 4px; padding-left: 6px; border-left: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; align-items: center; }
     .btn-action { background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 4px; opacity: 0.8; transition: opacity 0.2s; }
     .btn-action:active { opacity: 0.4; }
+    
+    .btn-load-more { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px; color: var(--gold); font-size: 14px; cursor: pointer; margin: 10px 0 20px; text-align: center; font-weight: bold; }
 
     .empty-state { text-align: center; padding: 52px 20px; }
     .empty-icon { font-size: 44px; margin-bottom: 14px; }
@@ -146,7 +148,19 @@
     /* History & Chart */
     .history-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
     .chart-toggle-btn { width: 100%; padding: 12px; background: #1c1600; color: var(--gold); border: 0.5px solid var(--gold); border-radius: 10px; margin-bottom: 12px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
-    .chart-container { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 14px; display: none; }
+    .chart-container { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 14px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    
+    .chart-ranges { display: flex; gap: 6px; margin-bottom: 12px; justify-content: center; }
+    .cr-btn { flex: 1; padding: 6px; background: var(--bg3); color: var(--text2); border: 0.5px solid var(--border); border-radius: 8px; font-size: 12px; cursor: pointer; text-align: center; transition: 0.2s; }
+    .cr-btn.active { background: var(--gold); color: #000; font-weight: bold; border-color: var(--gold); }
+
+    /* ★ 時間區間下拉選單 (Time-Boxing) */
+    .month-selector { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--gold-light); font-size: 15px; font-weight: bold; outline: none; margin-bottom: 12px; font-family: inherit; -webkit-appearance: none; cursor: pointer; text-align: center; }
+
+    .search-bar { margin-bottom: 12px; }
+    .search-input { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 14px 12px 38px; color: var(--text); font-size: 15px; outline: none; background-image: url('data:image/svg+xml;utf8,<svg fill="%23a0a0a5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'); background-repeat: no-repeat; background-position: 10px center; background-size: 20px; transition: border-color 0.2s; }
+    .search-input:focus { border-color: var(--gold); }
+
     .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 0.5px solid var(--border); }
     .fpill { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 8px; padding: 8px 14px; font-size: 14px; color: var(--text2); cursor: pointer; flex-grow: 1; text-align: center; transition: all 0.15s; }
     .fpill.active { background: #1c1600; border-color: var(--gold); color: var(--gold-light); font-weight: bold; }
@@ -162,7 +176,6 @@
     .dir-opt { flex: 1; padding: 12px; text-align: center; font-size: 15px; cursor: pointer; color: var(--text3); transition: all 0.15s; }
     .dir-opt.in-active { background: var(--green-bg); color: var(--green); font-weight: bold; }
     .dir-opt.out-active { background: var(--red-bg); color: var(--red); font-weight: bold; }
-    
     .dir-opt.locked { pointer-events: none; opacity: 0.3; }
 
     .weight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -178,7 +191,7 @@
 
     /* Converter */
     .conv-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
-    .conv-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+    .conv-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     .conv-card-title { font-size: 15px; color: var(--gold); margin-bottom: 14px; font-weight: bold; }
     .conv-row { margin-bottom: 12px; }
     .conv-row-label { font-size: 13px; color: var(--text2); margin-bottom: 5px; }
@@ -197,7 +210,7 @@
     .profile-avatar-big { width: 80px; height: 80px; border-radius: 50%; background: #2a1f00; border: 2px solid var(--gold); display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: bold; color: var(--gold); margin: 0 auto 12px; }
     .profile-name { font-size: 20px; color: var(--text); font-weight: bold; }
     .profile-email { font-size: 14px; color: var(--text3); margin-top: 6px; }
-    .menu-item { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+    .menu-item { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
     .menu-item:active { background: var(--bg3); }
     .mi-left { display: flex; align-items: center; gap: 12px; }
     .mi-icon { width: 40px; height: 40px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
@@ -208,7 +221,7 @@
 
     /* Daily Summary */
     .daily-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
-    .daily-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .daily-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     .dc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 0.5px solid var(--border); padding-bottom: 10px; }
     .dc-date { font-size: 16px; font-weight: bold; color: var(--gold-light); }
     .dc-label-title { font-size: 13px; color: var(--text2); background: var(--bg4); padding: 4px 10px; border-radius: 6px; }
@@ -220,7 +233,7 @@
     .dc-val.out { color: var(--red); }
 
     /* Detail View */
-    .detail-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 0 16px; margin-bottom: 12px; }
+    .detail-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 0 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 0.5px solid var(--border); }
     .detail-row:last-child { border-bottom: none; }
     .detail-label { font-size: 14px; color: var(--text2); }
@@ -383,7 +396,20 @@
       <div class="history-scroll">
         <button class="chart-toggle-btn" onclick="toggleChart()">📊 點此查看 / 隱藏庫存趨勢</button>
         <div class="chart-container" id="chart-wrap">
+          <div class="chart-ranges">
+            <button class="cr-btn active" onclick="setChartRange('7', this)">近 7 天</button>
+            <button class="cr-btn" onclick="setChartRange('30', this)">近 30 天</button>
+            <button class="cr-btn" onclick="setChartRange('month', this)">本月</button>
+            <button class="cr-btn" onclick="setChartRange('all', this)">全部</button>
+          </div>
           <canvas id="trendChart" height="180"></canvas>
+        </div>
+        
+        <select class="month-selector" id="month-selector" onchange="subTx()">
+          </select>
+
+        <div class="search-bar">
+          <input type="text" class="search-input" id="search-input" placeholder="搜尋交易對象、備註或類別..." oninput="onSearchInput()">
         </div>
 
         <div class="filter-bar" id="filter-bar">
@@ -518,6 +544,12 @@
           <div class="profile-name" id="p-name">用戶</div>
           <div class="profile-email" id="p-email">-</div>
         </div>
+        
+        <div class="menu-item" onclick="setStockAlert()">
+          <div class="mi-left"><div class="mi-icon" style="background:#2a2a0d; color:var(--gold);">🔔</div><div class="mi-label">庫存預警設定</div></div>
+          <div class="mi-arrow" style="font-size: 14px;" id="alert-level-text">未設定 ›</div>
+        </div>
+        
         <div class="menu-item" onclick="goScreen('daily')">
           <div class="mi-left"><div class="mi-icon" style="background:#1a0f00;">📊</div><div class="mi-label">歷史日結報表</div></div>
           <div class="mi-arrow">›</div>
@@ -594,12 +626,23 @@ const firebaseConfig = {
   appId: "1:709513635170:web:22f6ae6aa6e1fc4ed0783b"
 };
 firebase.initializeApp(firebaseConfig);
+
+// ★ 啟用 Firestore 離線支援 (Offline Persistence)
+firebase.firestore().enablePersistence()
+  .catch(function(err) {
+      if (err.code == 'failed-precondition') {
+          console.warn("多個分頁開啟，離線模式只能在單一分頁啟用");
+      } else if (err.code == 'unimplemented') {
+          console.warn("瀏覽器不支援離線模式");
+      }
+  });
+
 const auth = firebase.auth();
 const db = firebase.firestore();
 
 // State
 let user = null;
-let allTx = [];
+let allTx = []; // 為了圖表與總數，仍需保存此區間內的資料
 let curFilter = '全部';
 let fState = { type: '一般進貨', wDir: '入庫', cDir: '支出', sync: false };
 let unsubTx = null;
@@ -607,7 +650,11 @@ let trendChart = null;
 let editingTxId = null;
 let lastScreen = 'home'; 
 
-// ★ 限制次數管理邏輯 (每天重置)
+// Pagination & Chart state
+let renderLimit = 20;
+let currentChartRange = '7'; // 預設顯示近7天
+
+// 限制次數管理邏輯 (每天重置)
 function getActionCount(actionType) {
   const today = new Date().toISOString().slice(0,10);
   const stored = localStorage.getItem(`action_${actionType}`);
@@ -624,6 +671,21 @@ function incrementActionCount(actionType) {
   localStorage.setItem(`action_${actionType}`, JSON.stringify({ date: today, count: count + 1 }));
 }
 
+// 產生時間選單
+function initMonthSelector() {
+  const selector = document.getElementById('month-selector');
+  const now = new Date();
+  let html = '<option value="recent">預設：最近 30 筆</option>';
+  
+  // 產生過去 12 個月的選項
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthStr = d.toISOString().slice(0,7); // YYYY-MM
+    html += `<option value="${monthStr}">${monthStr} 紀錄</option>`;
+  }
+  selector.innerHTML = html;
+}
+
 // Auth listener
 auth.onAuthStateChanged(u => {
   document.getElementById('loading').style.display = 'none';
@@ -634,11 +696,17 @@ auth.onAuthStateChanged(u => {
     document.getElementById('p-avatar').textContent = init;
     document.getElementById('p-name').textContent = u.displayName || '用戶';
     document.getElementById('p-email').textContent = u.email || '-';
+    
+    const alertVal = localStorage.getItem(`alert_${user.uid}`);
+    document.getElementById('alert-level-text').innerHTML = alertVal ? `${alertVal} 錢 ›` : '未設定 ›';
+
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('auth-screen').classList.remove('active');
     document.getElementById('main-app').style.display = 'block';
+    
+    initMonthSelector();
     clearForm(); 
-    subTx();
+    subTx(); // 預設拉取近期資料
   } else {
     user = null;
     if (unsubTx) { unsubTx(); unsubTx = null; }
@@ -727,29 +795,80 @@ function goBackToList() {
 
 function showInstructions() {
   alert('【貴金屬庫存管理系統 - 操作指南】\n\n' +
-        '本系統專為精準追蹤庫存與資金雙軌設計。\n\n' +
         '一、 核心功能\n' +
-        '📦 交易建檔：內建「邏輯防呆」，選定交易類別後將自動鎖定正確的進出庫方向，防止誤觸作帳錯誤。\n' +
-        '⚖️ 智慧換算：公克/台錢/台兩/盎司四單位即時連動，並具備市值計算器。\n' +
-        '📊 數據視覺：首頁動態總覽、紀錄頁提供趨勢折線圖，以及歷史日結報表快速查帳。\n\n' +
+        '📦 交易建檔：內建「邏輯防呆」，自動鎖定正確的進出庫方向。\n' +
+        '⚖️ 智慧換算：公克/台錢/台兩/盎司四單位即時連動。\n' +
+        '📊 數據視覺：首頁總覽、紀錄頁趨勢圖及歷史日結報表。\n\n' +
         '二、 初始與補登\n' +
-        '初次使用請選「期初設定」建立起始資料（此模式解除防呆限制）。若需補登歷史紀錄，直接修改「交易時間」，系統將依時間軸完美重算。\n\n' +
-        '三、 資安與備份\n' +
-        '雲端資料完全隔離。建議定期至帳號頁面匯出 Excel 檔（.xlsx）妥善備份；如遇特殊需求，亦可上傳備份檔一鍵還原系統。');
+        '初次使用請選「期初設定」建立起始庫存（解除防呆限制）。若需補登舊紀錄，請直接修改「交易時間」，系統將依時間軸完美重算。\n\n' +
+        '三、 搜尋與分頁\n' +
+        '歷史紀錄支援分頁載入與關鍵字搜尋（可搜對象或備註）。\n\n' +
+        '四、 資安與備份\n' +
+        '強烈建議定期至帳號頁面匯出 Excel 備份，以策安全。');
+}
+
+function setStockAlert() {
+  const current = localStorage.getItem(`alert_${user.uid}`) || '';
+  const val = prompt('請輸入最低庫存預警水位 (台錢)\n當庫存低於此數值時將以紅色標示提醒：', current);
+  if (val !== null) {
+    const parsed = parseFloat(val);
+    if (isNaN(parsed)) {
+      localStorage.removeItem(`alert_${user.uid}`);
+      document.getElementById('alert-level-text').innerHTML = '未設定 ›';
+    } else {
+      localStorage.setItem(`alert_${user.uid}`, parsed);
+      document.getElementById('alert-level-text').innerHTML = `${parsed} 錢 ›`;
+    }
+    refreshDash(); 
+  }
 }
 
 function txCol() { return db.collection('users').doc(user.uid).collection('transactions'); }
 
+// ★ 核心優化：Time-boxing 與按需載入
 function subTx() {
   if (unsubTx) unsubTx();
-  unsubTx = txCol().orderBy('timestamp','desc').onSnapshot(snap => {
+  
+  const mode = document.getElementById('month-selector') ? document.getElementById('month-selector').value : 'recent';
+  let query = txCol().orderBy('timestamp','desc');
+
+  if (mode === 'recent') {
+    // 預設載入近 30 筆
+    query = query.limit(30);
+  } else {
+    // 載入特定月份 (例如 '2026-03')
+    const startStr = `${mode}-01T00:00:00.000Z`;
+    const startDate = new Date(startStr);
+    
+    // 計算下個月的第一天
+    const endYear = startDate.getMonth() === 11 ? startDate.getFullYear() + 1 : startDate.getFullYear();
+    const endMonth = startDate.getMonth() === 11 ? 0 : startDate.getMonth() + 1;
+    const endDate = new Date(endYear, endMonth, 1);
+
+    query = query.where('timestamp', '>=', firebase.firestore.Timestamp.fromDate(startDate))
+                 .where('timestamp', '<', firebase.firestore.Timestamp.fromDate(endDate));
+  }
+
+  // 顯示載入中
+  document.getElementById('history-list').innerHTML = '<div class="empty-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
+
+  unsubTx = query.onSnapshot(snap => {
     allTx = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    
+    // ⚠️ 注意：因為只有部分資料，首頁的「總庫存」與「結餘」可能不準確
+    // 實務上商業軟體會另外用一個 collection 專門存 Total 數值，此處先維持原本的累加顯示區間數值
     refreshDash();
     renderHistory();
     
     if(document.getElementById('chart-wrap').style.display === 'block') drawChart();
     if(document.getElementById('screen-daily').classList.contains('active')) renderDailySummary();
-  }, err => { console.error(err); });
+  }, err => { 
+    console.error(err); 
+    // 若缺乏索引，會出現提示需要建立 Firebase Index
+    if(err.message.includes('index')) {
+       toast('正在建立遠端索引，請稍後...', '');
+    }
+  });
 }
 
 function checkBackupReminder() {
@@ -821,7 +940,6 @@ async function deleteTx(id) {
   }
 }
 
-// ★ 更新：清除所有紀錄功能 (含每日限額)
 async function deleteAllTx() {
   const count = getActionCount('delete');
   if (count >= 3) {
@@ -829,23 +947,27 @@ async function deleteAllTx() {
     return;
   }
 
+  // ⚠️ 防呆警告：因為實作了分頁，所以提醒使用者只會刪除目前看得到的
+  const mode = document.getElementById('month-selector').value;
+  const modeText = mode === 'recent' ? '最近 30 筆' : `${mode} 月份`;
+  
   if (allTx.length === 0) {
-    toast('目前沒有任何紀錄可清除', 'error');
+    toast(`目前沒有任何紀錄可清除`, 'error');
     return;
   }
   
-  const msg = `⚠️ 警告：您即將永久清除所有交易紀錄！\n\n強烈建議您在執行此操作前先【匯出備份】。\n系統不保證後續上傳的舊資料能完全正常覆蓋或相容。\n\n(今日尚可執行次數：${3 - count} 次)\n請問確定要繼續刪除嗎？`;
+  const msg = `⚠️ 警告：您即將永久清除目前顯示的【${modeText}】交易紀錄！\n\n強烈建議您在執行此操作前先匯出備份。\n\n(今日尚可執行次數：${3 - count} 次)\n請問確定要繼續刪除嗎？`;
   if (!confirm(msg)) return;
 
-  const confirm2 = confirm('此操作無法復原！再次確認是否「清除所有紀錄」？');
+  const confirm2 = confirm('此操作無法復原！再次確認是否「清除」？');
   if (!confirm2) return;
 
   toast('正在清除資料...', '');
   try {
     const promises = allTx.map(tx => txCol().doc(tx.id).delete());
     await Promise.all(promises);
-    incrementActionCount('delete'); // 增加次數
-    toast('所有紀錄已成功清除！', 'success');
+    incrementActionCount('delete');
+    toast('紀錄已成功清除！', 'success');
     goScreen('home');
   } catch(err) {
     console.error(err);
@@ -927,8 +1049,17 @@ function refreshDash() {
     if (tx.cDir==='支出') totC -= tx.amount||0;
   });
   
-  document.getElementById('s-weight').textContent = totW.toFixed(3);
-  document.getElementById('s-weight-sub').textContent = `約 ${(totW/10).toFixed(4)} 兩 │ ${(totW*3.75).toFixed(3)} g`;
+  const sWeightEl = document.getElementById('s-weight');
+  const alertLvlStr = localStorage.getItem(`alert_${user?.uid}`);
+  if (alertLvlStr !== null && totW < parseFloat(alertLvlStr)) {
+    sWeightEl.style.color = 'var(--red)';
+    sWeightEl.innerHTML = `${totW.toFixed(3)} <span style="font-size:14px">⚠️過低</span>`;
+  } else {
+    sWeightEl.style.color = 'var(--gold-light)';
+    sWeightEl.textContent = totW.toFixed(3);
+  }
+
+  document.getElementById('s-weight-sub').textContent = `區間約 ${(totW/10).toFixed(4)} 兩 │ ${(totW*3.75).toFixed(3)} g`;
   document.getElementById('s-balance').textContent = 'NT$' + totC.toLocaleString();
   
   const today = new Date().toISOString().slice(0,10);
@@ -949,7 +1080,7 @@ function refreshDash() {
   const recent = allTx.slice(0,5);
   document.getElementById('recent-list').innerHTML = recent.length
     ? recent.map(txCard).join('')
-    : '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">尚無交易紀錄</div><div class="empty-sub">點下方「+」開始記錄</div></div>';
+    : '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">尚無交易紀錄</div></div>';
     
   checkBackupReminder();
 }
@@ -1008,6 +1139,13 @@ function toggleChart() {
   }
 }
 
+function setChartRange(range, el) {
+  currentChartRange = range;
+  document.querySelectorAll('.cr-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  drawChart();
+}
+
 function drawChart() {
   const ctx = document.getElementById('trendChart').getContext('2d');
   if (trendChart) trendChart.destroy();
@@ -1025,8 +1163,23 @@ function drawChart() {
     dailyData[date] = runW; 
   });
 
-  const labels = Object.keys(dailyData);
-  const data = Object.values(dailyData);
+  let labels = Object.keys(dailyData);
+  let data = Object.values(dailyData);
+
+  const now = new Date();
+  if (currentChartRange === '7') {
+    const cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0,10);
+    const filterIdx = labels.findIndex(l => l >= cutoff);
+    if(filterIdx !== -1) { labels = labels.slice(filterIdx); data = data.slice(filterIdx); }
+  } else if (currentChartRange === '30') {
+    const cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0,10);
+    const filterIdx = labels.findIndex(l => l >= cutoff);
+    if(filterIdx !== -1) { labels = labels.slice(filterIdx); data = data.slice(filterIdx); }
+  } else if (currentChartRange === 'month') {
+    const prefix = now.toISOString().slice(0,7); 
+    const filterIdx = labels.findIndex(l => l.startsWith(prefix));
+    if(filterIdx !== -1) { labels = labels.slice(filterIdx); data = data.slice(filterIdx); }
+  } 
 
   Chart.defaults.color = '#e0e0e0';
   Chart.defaults.font.family = '-apple-system, sans-serif';
@@ -1035,7 +1188,7 @@ function drawChart() {
     data: {
       labels: labels,
       datasets: [{
-        label: '總庫存(台錢)',
+        label: '區間趨勢(台錢)',
         data: data,
         borderColor: '#c9a84c',
         backgroundColor: 'rgba(201,168,76,0.15)',
@@ -1058,17 +1211,52 @@ function drawChart() {
   });
 }
 
+function onSearchInput() {
+  renderLimit = 20; 
+  renderHistory();
+}
+
+function loadMoreTx() {
+  renderLimit += 20;
+  renderHistory();
+}
+
 function renderHistory() {
-  const filtered = curFilter==='全部' ? allTx : allTx.filter(t=>t.type===curFilter);
+  const searchInputEl = document.getElementById('search-input');
+  const searchTerm = searchInputEl ? searchInputEl.value.toLowerCase().trim() : '';
+  
+  let filtered = allTx;
+  if (curFilter !== '全部') {
+    filtered = filtered.filter(t => t.type === curFilter);
+  }
+  if (searchTerm !== '') {
+    filtered = filtered.filter(t => 
+      (t.target && t.target.toLowerCase().includes(searchTerm)) || 
+      (t.note && t.note.toLowerCase().includes(searchTerm)) ||
+      (t.type && t.type.toLowerCase().includes(searchTerm))
+    );
+  }
+
   const el = document.getElementById('history-list');
-  if (!el) return;
-  el.innerHTML = filtered.length ? filtered.map(txCard).join('') : '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">沒有符合的紀錄</div></div>';
+  if (filtered.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">無資料，請嘗試切換月份</div></div>';
+    return;
+  }
+
+  const toRender = filtered.slice(0, renderLimit);
+  let html = toRender.map(txCard).join('');
+  
+  if (filtered.length > renderLimit) {
+    html += `<button class="btn-load-more" onclick="loadMoreTx()">載入更多 (${filtered.length - renderLimit} 筆未顯示)</button>`;
+  }
+  
+  el.innerHTML = html;
 }
 
 function renderDailySummary() {
   const el = document.getElementById('daily-list');
   if (!allTx.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">尚無日結資料</div></div>';
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">尚無資料</div></div>';
     return;
   }
   
@@ -1108,6 +1296,7 @@ function renderDailySummary() {
 
 function setFilter(f, el) {
   curFilter = f;
+  renderLimit = 20; 
   document.querySelectorAll('.fpill').forEach(p=>p.classList.remove('active'));
   el.classList.add('active');
   renderHistory();
@@ -1219,7 +1408,7 @@ function calcValue() {
 function doExport() {
   if (!allTx.length) { toast('尚無資料可匯出', 'error'); return; }
   
-  const h = ['交易序號', '交易日期', '交易類別', '出庫/入庫(台錢)', '出庫重量(台錢)', '入庫重量(台錢)', '庫存總重(台錢)', '出庫金額', '入庫金額', '結餘金額', '參考牌價', '交易對象', '備註', '狀態'];
+  const h = ['交易序號', '交易日期', '交易類別', '出庫/入庫(台錢)', '出庫重量(台錢)', '入庫重量(台錢)', '區間總重(台錢)', '出庫金額', '入庫金額', '區間結餘', '參考牌價', '交易對象', '備註', '狀態'];
   const sorted = [...allTx].sort((a,b)=>(a.timestamp?.seconds||0)-(b.timestamp?.seconds||0));
   
   let runW = 0; let runC = 0;
@@ -1265,7 +1454,6 @@ function doExport() {
   toast('Excel 報表已成功匯出！', 'success');
 }
 
-// ★ 檢查匯入次數限制
 function checkImportLimit() {
   const count = getActionCount('import');
   if (count >= 3) {
@@ -1367,8 +1555,13 @@ async function doImport(event) {
       }
 
       await Promise.all(promises);
-      incrementActionCount('import'); // 增加次數
+      incrementActionCount('import');
       alert(`匯入完成！成功還原 ${importedCount} 筆紀錄。`);
+      
+      // 重新載入最新區間
+      const selector = document.getElementById('month-selector');
+      if (selector) selector.value = 'recent';
+      subTx();
       goScreen('home'); 
       
     } catch(err) {
@@ -1395,6 +1588,7 @@ function toast(msg, type='') {
   t.textContent = msg; t.className = 'show ' + type;
   setTimeout(()=>{ t.className=''; }, 3000);
 }
+
 </script>
 </body>
 </html>
