@@ -22,7 +22,7 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --gold: #c9a84c; --gold-light: #f0d78c; --gold-dark: #8a6a00;
-      /* 升級版深色層次，告別視覺疲勞 */
+      /* 深色模式微調：讓背景更有層次，不再死黑 */
       --bg: #0d0d0d; --bg2: #1c1c1e; --bg3: #2c2c2e; --bg4: #3a3a3c;
       --text: #ffffff; --text2: #e0e0e0; --text3: #a0a0a5;
       --green: #32d74b; --green-bg: #0a2416; --red: #ff453a; --red-bg: #2b0d0d;
@@ -97,7 +97,7 @@
     .nav-add-btn { width: 54px; height: 54px; border-radius: 50%; background: linear-gradient(135deg, #c9a84c, #f0d78c); display: flex; align-items: center; justify-content: center; position: relative; top: -18px; box-shadow: 0 4px 20px rgba(201,168,76,0.45); }
     .nav-add-label { font-size: 12px; color: var(--gold); font-weight: bold; margin-top: -14px; }
 
-    /* Dashboard & Cards */
+    /* Dashboard & Cards (加入陰影增加立體感) */
     .dash-scroll { overflow-y: auto; flex: 1; padding: 14px 14px 0; -webkit-overflow-scrolling: touch; }
     .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
     .stat-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 14px; padding: 14px 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
@@ -139,6 +139,7 @@
     .btn-action { background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 4px; opacity: 0.8; transition: opacity 0.2s; }
     .btn-action:active { opacity: 0.4; }
     
+    /* 載入更多按鈕 */
     .btn-load-more { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px; color: var(--gold); font-size: 14px; cursor: pointer; margin: 10px 0 20px; text-align: center; font-weight: bold; transition: background 0.2s; }
     .btn-load-more:active { background: var(--bg4); }
 
@@ -152,11 +153,12 @@
     .chart-toggle-btn { width: 100%; padding: 12px; background: #1c1600; color: var(--gold); border: 0.5px solid var(--gold); border-radius: 10px; margin-bottom: 12px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
     .chart-container { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 14px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     
-    /* 月份選單與期初按鈕並排 */
+    /* ★ 月份選單與期初按鈕並排 */
     .history-controls { display: flex; gap: 8px; margin-bottom: 12px; }
     .month-selector { flex: 1; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--gold-light); font-size: 15px; font-weight: bold; outline: none; font-family: inherit; -webkit-appearance: none; cursor: pointer; text-align: center; }
     .btn-initial { flex: 0 0 auto; background: #1a1200; border: 0.5px solid var(--gold); border-radius: 10px; padding: 12px 16px; color: var(--gold); font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; }
 
+    /* 搜尋框 */
     .search-bar { margin-bottom: 12px; }
     .search-input { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 14px 12px 38px; color: var(--text); font-size: 15px; outline: none; background-image: url('data:image/svg+xml;utf8,<svg fill="%23a0a0a5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'); background-repeat: no-repeat; background-position: 10px center; background-size: 20px; transition: border-color 0.2s; }
     .search-input:focus { border-color: var(--gold); }
@@ -372,7 +374,7 @@
           </div>
         </div>
         <div class="today-card">
-          <div class="today-title">今日概況</div>
+          <div class="today-title">今日概況 (依最近30筆計算)</div>
           <div class="today-grid">
             <div class="today-item"><div class="ti-label">入庫(錢)</div><div class="ti-val in" id="td-inw">+0</div></div>
             <div class="today-item"><div class="ti-label">出庫(錢)</div><div class="ti-val out" id="td-outw">-0</div></div>
@@ -382,9 +384,9 @@
         </div>
         <div class="sec-header">
           <div class="sec-title">近期交易</div>
-          <div class="sec-more" onclick="goScreen('history')">查看全部 ›</div>
+          <div class="sec-more" onclick="goScreen('history'); document.getElementById('month-selector').value='recent'; loadHistoryMonth();">查看全部 ›</div>
         </div>
-        <div id="recent-list"><div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">尚無交易紀錄</div><div class="empty-sub">點下方「+」開始記錄</div></div></div>
+        <div id="recent-list"><div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">尚無交易紀錄</div></div></div>
       </div>
     </div>
 
@@ -394,26 +396,21 @@
         <div style="width:35px;"></div>
       </div>
       <div class="history-scroll">
-        <button class="chart-toggle-btn" onclick="toggleChart()">📊 點此查看 / 隱藏庫存趨勢</button>
+        <button class="chart-toggle-btn" onclick="toggleChart()">📊 點此查看 / 隱藏結餘走勢圖</button>
         <div class="chart-container" id="chart-wrap">
-          <div class="chart-ranges">
-            <button class="cr-btn" onclick="setChartRange('30', this)">近 30 天</button>
-            <button class="cr-btn active" onclick="setChartRange('month', this)">本月</button>
-            <button class="cr-btn" onclick="setChartRange('year', this)">今年</button>
-            <button class="cr-btn" onclick="setChartRange('all', this)">全部</button>
-          </div>
+          <div style="font-size: 12px; color: var(--text3); text-align: center; margin-bottom: 8px;">圖表根據下方選定之「月份/區間」精準繪製</div>
           <canvas id="trendChart" height="180"></canvas>
         </div>
 
         <div class="history-controls">
-          <select class="month-selector" id="month-selector" onchange="renderHistory()">
+          <select class="month-selector" id="month-selector" onchange="loadHistoryMonth()">
             <option value="recent">預設：全域快搜 (最近20筆起)</option>
           </select>
           <button class="btn-initial" id="btn-initial" onclick="jumpToInitial()" style="display: none;">🚩 跳至期初</button>
         </div>
 
         <div class="search-bar">
-          <input type="text" class="search-input" id="search-input" placeholder="全域搜尋交易對象、備註或類別..." oninput="onSearchInput()">
+          <input type="text" class="search-input" id="search-input" placeholder="在當前區間內搜尋關鍵字..." oninput="onSearchInput()">
         </div>
 
         <div class="filter-bar" id="filter-bar">
@@ -646,21 +643,21 @@ const db = firebase.firestore();
 
 // State & Cache
 let user = null;
-let allTx = []; // 完整歷史快取，避免重複載入
-let recentTx = []; // 近期 30 筆快取
+let allTx = []; // 作為匯出時暫存用，不介入常規渲染
+let recentTx = []; // 首頁專用：最新 30 筆快取
+let historyTx = []; // 歷史專用：依據所選區間或月份抓取的資料
 let curFilter = '全部';
 let fState = { type: '一般進貨', wDir: '入庫', cDir: '支出', sync: false };
-let unsubTx = null;
+let unsubRecent = null;
+let unsubHistory = null;
+let unsubStats = null;
 let trendChart = null;
 let editingTxId = null;
 let lastScreen = 'home'; 
 
-// ★ 獨立統計快取變數
+// ★ 獨立統計快取變數 (解決全域讀取效能問題)
 let globalStats = { totalW: 0, totalC: 0, monthly: {}, initialMonth: '' };
-
-// Pagination & Chart state
 let renderLimit = 20;
-let currentChartRange = 'month'; // 預設顯示本月
 
 // 限制次數管理邏輯
 function getActionCount(actionType) {
@@ -678,21 +675,24 @@ function incrementActionCount(actionType) {
   localStorage.setItem(`action_${actionType}`, JSON.stringify({ date: today, count: count + 1 }));
 }
 
-// 產生時間選單 (根據快取資料產生)
+// ★ 產生時間選單 (根據快取資料產生，確保包含本月)
 function initMonthSelector() {
   const selector = document.getElementById('month-selector');
   const currentVal = selector.value || 'recent';
-  let html = '<option value="recent">預設：全域快搜 (最近20筆起)</option>';
+  const nowMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
   
-  // 提取有交易紀錄的月份
-  const months = Object.keys(globalStats.monthly).sort().reverse();
-  months.forEach(m => {
+  let months = new Set(Object.keys(globalStats.monthly || {}));
+  months.add(nowMonth); // 強制加入本月
+  
+  const sortedMonths = Array.from(months).sort().reverse();
+  
+  let html = '<option value="recent">預設：全域快搜 (最近20筆起)</option>';
+  sortedMonths.forEach(m => {
     html += `<option value="${m}">${m} 月份紀錄</option>`;
   });
   
   selector.innerHTML = html;
-  // 保持原有選擇，若選定的月份消失則回歸預設
-  if (months.includes(currentVal) || currentVal === 'recent') {
+  if (sortedMonths.includes(currentVal) || currentVal === 'recent') {
       selector.value = currentVal;
   }
   
@@ -705,7 +705,7 @@ function initMonthSelector() {
   }
 }
 
-// ★ 快取重算引擎 (當初次載入、匯入或刪除全部時觸發)
+// ★ 快取重算引擎 (當初次載入、匯入或刪除全部時觸發，保護資料庫)
 async function recalcAllStats() {
     if (!user) return;
     try {
@@ -761,10 +761,12 @@ auth.onAuthStateChanged(u => {
     document.getElementById('main-app').style.display = 'block';
     
     clearForm(); 
-    subTx(); // 啟動背景資料載入與快取監聽
+    subTx(); // 啟動雙軌背景載入
   } else {
     user = null;
-    if (unsubTx) { unsubTx(); unsubTx = null; }
+    if (unsubStats) unsubStats();
+    if (unsubRecent) unsubRecent();
+    if (unsubHistory) unsubHistory();
     document.getElementById('main-app').style.display = 'none';
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('auth-screen').classList.add('active');
@@ -847,18 +849,18 @@ function showInstructions() {
         '一、 核心功能\n' +
         '📦 交易建檔：內建「邏輯防呆」，自動鎖定正確的進出庫方向。\n' +
         '⚖️ 智慧換算：公克/台錢/台兩/盎司四單位即時連動。\n' +
-        '📊 數據視覺：首頁總覽、紀錄頁趨勢圖及歷史日結報表。\n\n' +
+        '📊 數據視覺：首頁總覽、紀錄頁動態圖表及歷史日結。\n\n' +
         '二、 初始與補登\n' +
-        '初次使用請選「期初設定」建立起始庫存（解除防呆限制）。若需補登舊紀錄，請直接修改「交易時間」，系統將自動同步所有快取與結餘。\n\n' +
-        '三、 搜尋與分頁\n' +
-        '歷史紀錄支援分頁載入與全域關鍵字搜尋（可搜對象或備註）。\n\n' +
+        '請選「期初設定」建立起始庫存。若補登舊紀錄，請直接修改「交易時間」，系統將自動同步所有結餘。\n\n' +
+        '三、 雙軌查詢機制 (效能升級)\n' +
+        '首頁永遠顯示「最新 30 筆」交易；紀錄頁可透過下拉選單精準查詢「特定月份」以減少流量消耗。\n\n' +
         '四、 資安與備份\n' +
-        '支援背景離線操作，網路恢復即自動上傳。強烈建議定期至帳號頁面匯出 Excel 備份，以策安全。');
+        '支援背景離線操作，網路恢復即自動同步。建議定期至帳號頁面匯出 Excel 備份。');
 }
 
 function setStockAlert() {
   const current = localStorage.getItem(`alert_${user.uid}`) || '';
-  const val = prompt('請輸入最低庫存預警水位 (台錢)\n當庫存低於此數值時將以紅色標示提醒：', current);
+  const val = prompt('請輸入最低庫存預警水位 (台錢)\n當總庫存低於此數值時將以紅色標示提醒：', current);
   if (val !== null) {
     const parsed = parseFloat(val);
     if (isNaN(parsed)) {
@@ -872,45 +874,88 @@ function setStockAlert() {
   }
 }
 
-// ★ 全域加載與快取同步
-function subTx() {
-  if (unsubTx) unsubTx();
-  
-  // 1. 監聽全域歷史 (用於搜尋與動態切換月份)
-  unsubTx = db.collection('users').doc(user.uid).collection('transactions').orderBy('timestamp','desc').onSnapshot(snap => {
-    allTx = snap.docs.map(d => ({id: d.id, ...d.data()}));
-    recentTx = allTx.slice(0, 30); // 總覽頁始終抓最新 30 筆
-    
-    // 檢查是否需要重建快取 (若完全沒資料或快取失效)
-    db.collection('users').doc(user.uid).collection('meta').doc('stats').get().then(doc => {
-       if(!doc.exists && allTx.length > 0) recalcAllStats();
-       if(doc.exists) {
-           globalStats = doc.data();
-           initMonthSelector();
-           refreshDash();
-           renderHistory();
-           if(document.getElementById('chart-wrap').style.display === 'block') drawChart();
-       }
-    });
-  });
+function txCol() { return db.collection('users').doc(user.uid).collection('transactions'); }
 
-  // 2. 監聽快取檔 (圖表起點與總結餘的核心)
-  db.collection('users').doc(user.uid).collection('meta').doc('stats').onSnapshot(doc => {
-      if(doc.exists) {
+// ★ 啟動雙軌監聽與快取機制
+function subTx() {
+  if (unsubStats) unsubStats();
+  if (unsubRecent) unsubRecent();
+
+  // 1. 監聽獨立統計檔 (確保首頁數字極速載入且準確)
+  unsubStats = db.collection('users').doc(user.uid).collection('meta').doc('stats').onSnapshot(doc => {
+      if (doc.exists) {
           globalStats = doc.data();
+          if(!globalStats.monthly) globalStats.monthly = {};
           initMonthSelector();
           refreshDash();
           if(document.getElementById('chart-wrap').style.display === 'block') drawChart();
+      } else {
+          recalcAllStats(); // 若系統剛建立無快取，則主動算一次
       }
   });
+
+  // 2. 首頁永遠監聽最新 30 筆 (不動如山)
+  unsubRecent = txCol().orderBy('timestamp','desc').limit(30).onSnapshot(snap => {
+      recentTx = snap.docs.map(d => ({id: d.id, ...d.data()}));
+      refreshDash();
+      
+      // 若歷史頁面剛好在「預設快搜模式」，同步更新畫面
+      const mode = document.getElementById('month-selector') ? document.getElementById('month-selector').value : 'recent';
+      if (mode === 'recent') {
+          historyTx = [...recentTx];
+          renderHistory();
+          if(document.getElementById('chart-wrap').style.display === 'block') drawChart();
+      }
+  });
+
+  // 3. 初始載入歷史紀錄區塊
+  loadHistoryMonth();
+}
+
+// 歷史頁面的下拉選單切換邏輯
+function loadHistoryMonth() {
+    if (unsubHistory) { unsubHistory(); unsubHistory = null; }
+    
+    const mode = document.getElementById('month-selector').value;
+    
+    if (mode === 'recent') {
+        historyTx = [...recentTx];
+        renderLimit = 20;
+        renderHistory();
+        if(document.getElementById('chart-wrap').style.display === 'block') drawChart();
+        if(document.getElementById('screen-daily').classList.contains('active')) renderDailySummary();
+        return;
+    }
+
+    document.getElementById('history-list').innerHTML = '<div class="empty-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
+
+    const startStr = `${mode}-01T00:00:00.000Z`;
+    const startDate = new Date(startStr);
+    const endYear = startDate.getMonth() === 11 ? startDate.getFullYear() + 1 : startDate.getFullYear();
+    const endMonth = startDate.getMonth() === 11 ? 0 : startDate.getMonth() + 1;
+    const endDate = new Date(endYear, endMonth, 1);
+
+    // ★ 按月份區間精準載入
+    unsubHistory = txCol()
+        .where('timestamp', '>=', firebase.firestore.Timestamp.fromDate(startDate))
+        .where('timestamp', '<', firebase.firestore.Timestamp.fromDate(endDate))
+        .orderBy('timestamp', 'desc')
+        .onSnapshot(snap => {
+            historyTx = snap.docs.map(d => ({id: d.id, ...d.data()}));
+            renderLimit = 20;
+            renderHistory();
+            if(document.getElementById('chart-wrap').style.display === 'block') drawChart();
+            if(document.getElementById('screen-daily').classList.contains('active')) renderDailySummary();
+        }, err => {
+            console.error(err);
+            if(err.message.includes('index')) toast('正在建立遠端索引，請稍後重試', 'error');
+        });
 }
 
 function jumpToInitial() {
     if (globalStats.initialMonth) {
         document.getElementById('month-selector').value = globalStats.initialMonth;
-        renderLimit = 20;
-        renderHistory();
-        drawChart();
+        loadHistoryMonth();
     }
 }
 
@@ -920,14 +965,14 @@ function checkBackupReminder() {
   const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
   const banner = document.getElementById('backup-reminder');
   
-  if (allTx.length > 0 && (!lastBackup || (now - lastBackup > ONE_WEEK))) {
+  if (recentTx.length > 0 && (!lastBackup || (now - lastBackup > ONE_WEEK))) {
     banner.style.display = 'flex';
   } else {
     banner.style.display = 'none';
   }
 }
 
-// ★ 快取遞增引擎：每次寫入/修改/刪除都必須同步快取
+// ★ 快取遞增引擎：每次寫入/修改/刪除都自動同步統計檔
 async function updateStatsCache(txData, oldTxData = null, isDelete = false) {
     if (!user) return;
     const statsRef = db.collection('users').doc(user.uid).collection('meta').doc('stats');
@@ -963,17 +1008,16 @@ async function updateStatsCache(txData, oldTxData = null, isDelete = false) {
         updates[`monthly.${oldMonth}.netW`] = firebase.firestore.FieldValue.increment(-oldDiffW);
         updates[`monthly.${oldMonth}.netC`] = firebase.firestore.FieldValue.increment(-oldDiffC);
     } else {
-        updates['totalW'] = firebase.firestore.FieldValue.increment(diffW);
-        updates['totalC'] = firebase.firestore.FieldValue.increment(diffC);
-        updates[`monthly.${month}.netW`] = firebase.firestore.FieldValue.increment(diffW);
-        updates[`monthly.${month}.netC`] = firebase.firestore.FieldValue.increment(diffC);
+        if (diffW !== 0) { updates['totalW'] = firebase.firestore.FieldValue.increment(diffW); updates[`monthly.${month}.netW`] = firebase.firestore.FieldValue.increment(diffW); }
+        if (diffC !== 0) { updates['totalC'] = firebase.firestore.FieldValue.increment(diffC); updates[`monthly.${month}.netC`] = firebase.firestore.FieldValue.increment(diffC); }
     }
     
     try {
-        await statsRef.update(updates);
-        // 如果是新增了更早的期初設定，重新校正
         if (txData && txData.type === '期初設定' && (!globalStats.initialMonth || month < globalStats.initialMonth)) {
-            await recalcAllStats(); 
+            updates['initialMonth'] = month;
+        }
+        if (Object.keys(updates).length > 0) {
+            await statsRef.update(updates);
         }
     } catch(e) {
         if (e.code === 'not-found') await recalcAllStats();
@@ -1015,7 +1059,9 @@ async function doSubmit() {
   try {
     const txColRef = db.collection('users').doc(user.uid).collection('transactions');
     if (editingTxId) {
-      const oldData = allTx.find(t => t.id === editingTxId);
+      // 找出舊資料以計算差額
+      let oldData = historyTx.find(t => t.id === editingTxId) || recentTx.find(t => t.id === editingTxId);
+      if (!oldData) { const doc = await txColRef.doc(editingTxId).get(); oldData = doc.data(); }
       await txColRef.doc(editingTxId).update(txData);
       updateStatsCache(txData, oldData, false);
       toast('紀錄修改成功！', 'success');
@@ -1033,8 +1079,10 @@ async function doSubmit() {
 async function deleteTx(id) {
   if (!confirm('確定要刪除這筆紀錄嗎？\n(刪除後總庫存與圖表將自動重新計算)')) return;
   try {
-    const txData = allTx.find(t => t.id === id);
-    await db.collection('users').doc(user.uid).collection('transactions').doc(id).delete();
+    let txData = historyTx.find(t => t.id === id) || recentTx.find(t => t.id === id);
+    if (!txData) { const doc = await txCol().doc(id).get(); txData = doc.data(); }
+    
+    await txCol().doc(id).delete();
     updateStatsCache(txData, null, true);
     toast('紀錄已刪除，庫存已更新！', 'success');
   } catch(err) {
@@ -1045,29 +1093,30 @@ async function deleteTx(id) {
 async function deleteAllTx() {
   const count = getActionCount('delete');
   if (count >= 3) {
-    alert('⚠️ 操作受限\n為了保護雲端資料庫資源，每天限制執行「清除所有紀錄」最多 3 次。\n\n您今日的額度已用盡，請於明日再試。');
+    alert('⚠️ 操作受限\n每天限制執行「清除所有紀錄」最多 3 次。\n您今日的額度已用盡，請於明日再試。');
     return;
   }
+
+  const modeText = document.getElementById('month-selector').value === 'recent' ? '最近 30 筆' : '當月';
   
-  if (allTx.length === 0) {
+  if (historyTx.length === 0) {
     toast(`目前沒有任何紀錄可清除`, 'error');
     return;
   }
   
-  const msg = `⚠️ 警告：您即將永久清除【所有】交易紀錄！\n\n強烈建議您在執行此操作前先匯出備份。\n\n(今日尚可執行次數：${3 - count} 次)\n請問確定要繼續刪除嗎？`;
+  const msg = `⚠️ 警告：您即將永久清除目前畫面上的【${modeText}】交易紀錄！\n\n強烈建議您在執行此操作前先匯出備份。\n(今日尚可執行次數：${3 - count} 次)\n請問確定要繼續刪除嗎？`;
   if (!confirm(msg)) return;
 
-  const confirm2 = confirm('此操作無法復原！再次確認是否「清除全部」？');
+  const confirm2 = confirm('此操作無法復原！再次確認是否「清除畫面資料」？');
   if (!confirm2) return;
 
   toast('正在清除資料...', '');
   try {
-    const txColRef = db.collection('users').doc(user.uid).collection('transactions');
-    const promises = allTx.map(tx => txColRef.doc(tx.id).delete());
+    const promises = historyTx.map(tx => txCol().doc(tx.id).delete());
     await Promise.all(promises);
     incrementActionCount('delete');
-    await recalcAllStats(); // 重置快取
-    toast('所有紀錄已成功清除！', 'success');
+    await recalcAllStats(); // 批量刪除後重建快取最準確
+    toast('紀錄已成功清除！', 'success');
     goScreen('home');
   } catch(err) {
     console.error(err);
@@ -1076,7 +1125,7 @@ async function deleteAllTx() {
 }
 
 function editTx(id) {
-  const tx = allTx.find(t => t.id === id);
+  const tx = historyTx.find(t => t.id === id) || recentTx.find(t => t.id === id);
   if (!tx) return;
   
   editingTxId = id; 
@@ -1108,7 +1157,7 @@ function editTx(id) {
 }
 
 function showDetail(id) {
-  const tx = allTx.find(t => t.id === id);
+  const tx = historyTx.find(t => t.id === id) || recentTx.find(t => t.id === id);
   if(!tx) return;
   
   const isIn = tx.wDir === '入庫';
@@ -1140,22 +1189,10 @@ function showDetail(id) {
 }
 
 function refreshDash() {
-  // ★ 從最新 30 筆中計算今日概況
-  const today = new Date().toISOString().slice(0,10);
-  let tiw=0,tow=0,tic=0,toc=0;
-  recentTx.forEach(tx => {
-    if ((tx.date||'').slice(0,10)===today) {
-      if(tx.wDir==='入庫') tiw+=tx.mace||0;
-      if(tx.wDir==='出庫') tow+=tx.mace||0;
-      if(tx.cDir==='收入') tic+=tx.amount||0;
-      if(tx.cDir==='支出') toc+=tx.amount||0;
-    }
-  });
-
-  // ★ 首頁總結餘直接讀取快取 (免全域迴圈計算)
+  // ★ 首頁總數字：完全仰賴快取，秒載入不拖泥帶水
   const totW = globalStats.totalW || 0;
   const totC = globalStats.totalC || 0;
-  
+
   const sWeightEl = document.getElementById('s-weight');
   const alertLvlStr = localStorage.getItem(`alert_${user?.uid}`);
   if (alertLvlStr !== null && totW < parseFloat(alertLvlStr)) {
@@ -1169,22 +1206,36 @@ function refreshDash() {
   document.getElementById('s-weight-sub').textContent = `約 ${(totW/10).toFixed(4)} 兩 │ ${(totW*3.75).toFixed(3)} g`;
   document.getElementById('s-balance').textContent = 'NT$' + totC.toLocaleString();
   
+  // ★ 今日概況：直接從 recentTx 推算，無需重新抓資料
+  const today = new Date().toISOString().slice(0,10);
+  let tiw=0,tow=0,tic=0,toc=0;
+  recentTx.forEach(tx => {
+    if ((tx.date||'').slice(0,10)===today) {
+      if(tx.wDir==='入庫') tiw+=tx.mace||0;
+      if(tx.wDir==='出庫') tow+=tx.mace||0;
+      if(tx.cDir==='收入') tic+=tx.amount||0;
+      if(tx.cDir==='支出') toc+=tx.amount||0;
+    }
+  });
   document.getElementById('td-inw').textContent = '+' + tiw.toFixed(3);
   document.getElementById('td-outw').textContent = '-' + tow.toFixed(3);
   document.getElementById('td-inc').textContent = '+' + tic.toLocaleString();
   document.getElementById('td-outc').textContent = '-' + toc.toLocaleString();
   
-  document.getElementById('recent-list').innerHTML = recentTx.length > 0
-    ? recentTx.slice(0,5).map(txCard).join('')
-    : '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">尚無交易紀錄</div></div>';
+  const recentEl = document.getElementById('recent-list');
+  if (recentTx.length > 0) {
+      let html = recentTx.slice(0,5).map(txCard).join('');
+      html += `<button class="btn-load-more" onclick="goScreen('history'); document.getElementById('month-selector').value='recent'; loadHistoryMonth();">查看更多近期紀錄 ›</button>`;
+      recentEl.innerHTML = html;
+  } else {
+      recentEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">尚無交易紀錄</div></div>';
+  }
     
   checkBackupReminder();
 }
 
 function txCard(tx) {
   const isIn = tx.wDir==='入庫';
-  const isOut = tx.wDir==='出庫';
-  
   let icon = '◎';
   if (tx.type === '一般進貨') icon = '📦';
   else if (tx.type === '一般銷售') icon = '💰';
@@ -1202,11 +1253,8 @@ function txCard(tx) {
   const dateStr = tx.date ? new Date(tx.date).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
   
   let badgeStr = '';
-  if (tx.isEdited) {
-    badgeStr = '<span style="font-size:12px; color:#ffffff; font-weight:normal; margin-left:6px;">(修改)</span>';
-  } else if (tx.isBackdated) {
-    badgeStr = '<span style="font-size:12px; color:#ffffff; font-weight:normal; margin-left:6px;">(補登)</span>';
-  }
+  if (tx.isEdited) badgeStr = '<span style="font-size:12px; color:#ffffff; font-weight:normal; margin-left:6px;">(修改)</span>';
+  else if (tx.isBackdated) badgeStr = '<span style="font-size:12px; color:#ffffff; font-weight:normal; margin-left:6px;">(補登)</span>';
   
   const meta = [dateStr, tx.target].filter(Boolean).join(' · ');
   
@@ -1235,65 +1283,70 @@ function toggleChart() {
   }
 }
 
-// ★ 取得指定月份之前的歷史總結餘 (圖表起點計算器)
-function getStartingBalance(targetDateStr) {
+// ★ 取得指定月份之前的歷史總結餘 (精準圖表起點)
+function getStartingBalance(targetMonthStr) {
   let startW = 0;
-  for (const [m, data] of Object.entries(globalStats.monthly)) {
-      if (m < targetDateStr.slice(0, 7)) {
+  for (const [m, data] of Object.entries(globalStats.monthly || {})) {
+      if (m < targetMonthStr) {
           startW += data.netW || 0;
       }
   }
   return startW;
 }
 
-function setChartRange(range, el) {
-  currentChartRange = range;
-  document.querySelectorAll('.cr-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  drawChart();
-}
-
 function drawChart() {
   const ctx = document.getElementById('trendChart').getContext('2d');
   if (trendChart) trendChart.destroy();
-  if (allTx.length === 0) return;
+  if (historyTx.length === 0) return;
 
-  const now = new Date();
-  let cutoffDate = null;
+  const mode = document.getElementById('month-selector').value;
+  let labels = [];
+  let data = [];
 
-  if (currentChartRange === '7') {
-    cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0,10);
-  } else if (currentChartRange === '30') {
-    cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0,10);
-  } else if (currentChartRange === 'month') {
-    cutoffDate = now.toISOString().slice(0,7) + '-01';
-  } else if (currentChartRange === 'year') {
-    cutoffDate = now.getFullYear() + '-01-01';
+  if (mode === 'recent') {
+      // 若為最近模式，從「目前總庫存」倒推畫圖
+      let currentBal = globalStats.totalW || 0;
+      const dayGroups = {};
+      historyTx.forEach(tx => {
+          const d = tx.date.slice(0,10);
+          if(!dayGroups[d]) dayGroups[d] = 0;
+          dayGroups[d] += (tx.wDir === '入庫' ? 1 : -1) * (tx.mace || 0);
+      });
+      
+      const sortedDays = Object.keys(dayGroups).sort((a,b) => b.localeCompare(a)); 
+      const points = [];
+      sortedDays.forEach(d => {
+          points.push({ x: d, y: currentBal });
+          currentBal -= dayGroups[d]; // 扣除當日交易量以回到前一日結餘
+      });
+      
+      points.reverse(); 
+      labels = points.map(p => p.x);
+      data = points.map(p => p.y);
+  } else {
+      // 特定月份：利用快取計算該月初始庫存
+      let startW = getStartingBalance(mode);
+      let runW = startW;
+      
+      const dayGroups = {};
+      historyTx.forEach(tx => {
+          const d = tx.date.slice(0,10);
+          if(!dayGroups[d]) dayGroups[d] = 0;
+          dayGroups[d] += (tx.wDir === '入庫' ? 1 : -1) * (tx.mace || 0);
+      });
+      
+      const sortedDays = Object.keys(dayGroups).sort();
+      sortedDays.forEach(d => {
+          runW += dayGroups[d];
+          labels.push(d);
+          data.push(runW);
+      });
+
+      if (labels.length === 0) {
+          labels = [`${mode}-01`];
+          data = [startW];
+      }
   }
-
-  // 過濾區間內的資料，並按時間由舊到新排序
-  const intervalTx = cutoffDate ? allTx.filter(t => t.date >= cutoffDate) : allTx;
-  const sorted = intervalTx.sort((a,b)=>(a.timestamp?.seconds||0)-(b.timestamp?.seconds||0));
-  
-  // ★ 核心修正：找出圖表的起始庫存基準點
-  let runW = cutoffDate ? getStartingBalance(cutoffDate) : 0;
-  const dailyData = {};
-  
-  // 如果今天還沒有交易，至少把起始點畫上去
-  if (sorted.length === 0 && cutoffDate) {
-      dailyData[cutoffDate] = runW;
-      dailyData[now.toISOString().slice(0,10)] = runW;
-  }
-
-  sorted.forEach(tx => {
-    const date = tx.date ? tx.date.slice(0,10) : '';
-    if(!date) return;
-    runW += (tx.wDir === '入庫' ? 1 : -1) * (tx.mace || 0);
-    dailyData[date] = runW; 
-  });
-
-  let labels = Object.keys(dailyData);
-  let data = Object.values(dailyData);
 
   Chart.defaults.color = '#e0e0e0';
   Chart.defaults.font.family = '-apple-system, sans-serif';
@@ -1302,7 +1355,7 @@ function drawChart() {
     data: {
       labels: labels,
       datasets: [{
-        label: '區間總庫存(台錢)',
+        label: '期末結餘(台錢)',
         data: data,
         borderColor: '#c9a84c',
         backgroundColor: 'rgba(201,168,76,0.15)',
@@ -1319,7 +1372,7 @@ function drawChart() {
       plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
       scales: {
         x: { grid: { color: '#333' } },
-        y: { grid: { color: '#333' }, beginAtZero: false } // 取消從0開始，圖表走勢更清晰
+        y: { grid: { color: '#333' }, beginAtZero: false } // 不強制歸零，走勢更精準
       }
     }
   });
@@ -1338,16 +1391,10 @@ function loadMoreTx() {
 function renderHistory() {
   const searchInputEl = document.getElementById('search-input');
   const searchTerm = searchInputEl ? searchInputEl.value.toLowerCase().trim() : '';
-  const monthMode = document.getElementById('month-selector') ? document.getElementById('month-selector').value : 'recent';
   
-  // 1. 執行過濾 (月份、分類、關鍵字搜尋)
-  let filtered = allTx;
-
-  if (monthMode !== 'recent') {
-      filtered = filtered.filter(t => t.date && t.date.startsWith(monthMode));
-  }
+  let filtered = historyTx;
   if (curFilter !== '全部') {
-      filtered = filtered.filter(t => t.type === curFilter);
+    filtered = filtered.filter(t => t.type === curFilter);
   }
   if (searchTerm !== '') {
     filtered = filtered.filter(t => 
@@ -1359,16 +1406,15 @@ function renderHistory() {
 
   const el = document.getElementById('history-list');
   if (filtered.length === 0) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">找不到相符的紀錄</div></div>';
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">無相符資料</div></div>';
     return;
   }
 
-  // 2. 執行分頁 (只渲染目前設定數量的元素，保護 DOM 效能)
   const toRender = filtered.slice(0, renderLimit);
   let html = toRender.map(txCard).join('');
   
   if (filtered.length > renderLimit) {
-    html += `<button class="btn-load-more" onclick="loadMoreTx()">載入更多 (${filtered.length - renderLimit} 筆未顯示)</button>`;
+    html += `<button class="btn-load-more" onclick="loadMoreTx()">往下展開更多 (${filtered.length - renderLimit} 筆未顯示)</button>`;
   }
   
   el.innerHTML = html;
@@ -1376,13 +1422,13 @@ function renderHistory() {
 
 function renderDailySummary() {
   const el = document.getElementById('daily-list');
-  if (!allTx.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">尚無資料</div></div>';
+  if (!historyTx.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">該區間尚無資料</div></div>';
     return;
   }
   
   const grouped = {};
-  allTx.forEach(tx => {
+  historyTx.forEach(tx => {
     const d = tx.date ? new Date(tx.date).toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-') : '';
     if(!d) return;
     if(!grouped[d]) grouped[d] = { inW:0, outW:0, inC:0, outC:0 };
@@ -1526,59 +1572,50 @@ function calcValue() {
   document.getElementById('cv-total').textContent = 'NT$ ' + total.toLocaleString();
 }
 
-function doExport() {
-  if (!allTx.length) { toast('尚無資料可匯出', 'error'); return; }
-  
-  const h = ['交易序號', '交易日期', '交易類別', '出庫/入庫(台錢)', '出庫重量(台錢)', '入庫重量(台錢)', '總庫存(台錢)', '出庫金額', '入庫金額', '總結餘', '參考牌價', '交易對象', '備註', '狀態'];
-  const sorted = [...allTx].sort((a,b)=>(a.timestamp?.seconds||0)-(b.timestamp?.seconds||0));
-  
-  let runW = 0; let runC = 0;
-
-  const rows = sorted.map((tx, index) => {
-    const dateStr = tx.date ? new Date(tx.date).toLocaleString('zh-TW', {hour12: false}) : '';
-    const inW = tx.wDir === '入庫' ? (tx.mace || 0) : 0;
-    const outW = tx.wDir === '出庫' ? (tx.mace || 0) : 0;
-    const inC = tx.cDir === '收入' ? (tx.amount || 0) : 0;
-    const outC = tx.cDir === '支出' ? (tx.amount || 0) : 0;
+// ★ 全域匯出備份 (點擊時才消耗讀取額度)
+async function doExport() {
+  toast('正在擷取完整資料，請稍後...', '');
+  try {
+      const snap = await txCol().orderBy('timestamp', 'asc').get();
+      if (snap.empty) { toast('尚無資料可匯出', 'error'); return; }
+      
+      const sorted = snap.docs.map(d => d.data());
+      const h = ['交易序號', '交易日期', '交易類別', '出庫/入庫(台錢)', '出庫重量(台錢)', '入庫重量(台錢)', '總庫存(台錢)', '出庫金額', '入庫金額', '總結餘', '參考牌價', '交易對象', '備註', '狀態'];
+      
+      let runW = 0, runC = 0;
+      const rows = sorted.map((tx, index) => {
+        const dateStr = tx.date ? new Date(tx.date).toLocaleString('zh-TW', {hour12: false}) : '';
+        const inW = tx.wDir === '入庫' ? (tx.mace || 0) : 0;
+        const outW = tx.wDir === '出庫' ? (tx.mace || 0) : 0;
+        const inC = tx.cDir === '收入' ? (tx.amount || 0) : 0;
+        const outC = tx.cDir === '支出' ? (tx.amount || 0) : 0;
+        
+        let statusText = tx.isEdited ? '修改' : (tx.isBackdated ? '補登' : '正常');
     
-    let statusText = '正常';
-    if(tx.isEdited) statusText = '修改';
-    else if(tx.isBackdated) statusText = '補登';
-
-    runW = runW + inW - outW;
-    runC = runC + inC - outC;
-
-    return [
-      index + 1, dateStr, tx.type || '', tx.wDir || '', 
-      outW > 0 ? outW : '', inW > 0 ? inW : '', runW.toFixed(3), 
-      outC > 0 ? outC : '', inC > 0 ? inC : '', runC, 
-      tx.price || '', tx.target || '', tx.note || '', statusText
-    ];
-  });
-  
-  const ws = XLSX.utils.aoa_to_sheet([h, ...rows]);
-  
-  ws['!cols'] = [
-    { wch: 10 }, { wch: 22 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, 
-    { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 15 }, 
-    { wch: 25 }, { wch: 10 }
-  ];
-
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "庫存紀錄");
-  
-  XLSX.writeFile(wb, '貴金屬庫存紀錄_'+new Date().toISOString().slice(0,10)+'.xlsx');
-  
-  localStorage.setItem('lastBackupDate', Date.now());
-  checkBackupReminder();
-  
-  toast('Excel 報表已成功匯出！', 'success');
+        runW += inW - outW;
+        runC += inC - outC;
+    
+        return [ index + 1, dateStr, tx.type || '', tx.wDir || '', outW || '', inW || '', runW.toFixed(3), outC || '', inC || '', runC, tx.price || '', tx.target || '', tx.note || '', statusText ];
+      });
+      
+      const ws = XLSX.utils.aoa_to_sheet([h, ...rows]);
+      ws['!cols'] = [{ wch: 10 }, { wch: 22 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 15 }, { wch: 25 }, { wch: 10 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "庫存紀錄");
+      
+      XLSX.writeFile(wb, '貴金屬庫存紀錄_'+new Date().toISOString().slice(0,10)+'.xlsx');
+      localStorage.setItem('lastBackupDate', Date.now());
+      checkBackupReminder();
+      toast('Excel 報表已成功匯出！', 'success');
+  } catch(e) {
+      toast('匯出失敗：' + e.message, 'error');
+  }
 }
 
 function checkImportLimit() {
   const count = getActionCount('import');
   if (count >= 3) {
-    alert('⚠️ 操作受限\n為了保護雲端資料庫資源，每天限制執行「上傳還原紀錄」最多 3 次。\n\n您今日的額度已用盡，請於明日再試。');
+    alert('⚠️ 操作受限\n每天限制執行「上傳還原紀錄」最多 3 次。\n您今日的額度已用盡，請於明日再試。');
     return;
   }
   document.getElementById('import-file').click();
@@ -1671,15 +1708,18 @@ async function doImport(event) {
       }
       
       if (importedCount === 0) {
-        alert('匯入失敗：檔案中沒有發現可辨識的交易紀錄，請確保格式與系統匯出的 Excel 一致。');
+        alert('匯入失敗：檔案中沒有發現可辨識的交易紀錄。');
         return;
       }
 
       await Promise.all(promises);
       incrementActionCount('import');
-      await recalcAllStats(); // 匯入後完整重建快取
+      await recalcAllStats(); // 重新校正快取
       alert(`匯入完成！成功還原 ${importedCount} 筆紀錄。`);
       
+      const selector = document.getElementById('month-selector');
+      if (selector) selector.value = 'recent';
+      loadHistoryMonth();
       goScreen('home'); 
       
     } catch(err) {
@@ -1698,7 +1738,7 @@ async function doImport(event) {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.01\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.02\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
@@ -1706,7 +1746,6 @@ function toast(msg, type='') {
   t.textContent = msg; t.className = 'show ' + type;
   setTimeout(()=>{ t.className=''; }, 3000);
 }
-
 </script>
 </body>
 </html>
