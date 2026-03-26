@@ -162,6 +162,10 @@
     .dir-opt { flex: 1; padding: 12px; text-align: center; font-size: 15px; cursor: pointer; color: var(--text3); transition: all 0.15s; }
     .dir-opt.in-active { background: var(--green-bg); color: var(--green); font-weight: bold; }
     .dir-opt.out-active { background: var(--red-bg); color: var(--red); font-weight: bold; }
+    
+    /* ★ 防呆鎖定 CSS */
+    .dir-opt.locked { pointer-events: none; opacity: 0.3; }
+
     .weight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .wf { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 11px; padding: 12px 13px; transition: border-color 0.15s; }
     .wf.hl { border-color: var(--gold); background: #1c1600; }
@@ -699,8 +703,18 @@ function goBackToList() {
   goScreen(lastScreen);
 }
 
+// ★ 更新：專業級系統說明重構
 function showInstructions() {
-  alert('【系統操作說明】\n\n1. 新增交易：包含進銷與「期初設定」，支援修改時間補登。\n2. 重量連動：輸入任一單位，系統將自動精準換算。\n3. 歷史紀錄：點擊單筆紀錄可查看明細，亦可進行修改與刪除。\n4. 趨勢圖表：在「紀錄」頁面上方可展開庫存折線圖，掌握資金趨勢。\n5. 帳號與備份：強烈建議定期至「帳號」頁面匯出 Excel 備份，遇特殊狀況時也可重新上傳 Excel 還原資料。');
+  alert('【貴金屬庫存管理系統 - 操作指南】\n\n' +
+        '本系統專為精準追蹤庫存與資金雙軌設計。\n\n' +
+        '一、 核心功能\n' +
+        '📦 交易建檔：內建「邏輯防呆」，選定交易類別後將自動鎖定正確的進出庫方向，防止誤觸作帳錯誤。\n' +
+        '⚖️ 智慧換算：公克/台錢/台兩/盎司四單位即時連動，並具備市值計算器。\n' +
+        '📊 數據視覺：首頁動態總覽、紀錄頁提供趨勢折線圖，以及歷史日結報表快速查帳。\n\n' +
+        '二、 初始與補登\n' +
+        '初次使用請選「期初設定」建立起始資料（此模式解除防呆限制）。若需補登歷史紀錄，直接修改「交易時間」，系統將依時間軸完美重算。\n\n' +
+        '三、 資安與備份\n' +
+        '雲端資料完全隔離。建議定期至帳號頁面匯出 Excel 檔（.xlsx）妥善備份；如遇特殊需求，亦可上傳備份檔一鍵還原系統。');
 }
 
 function txCol() { return db.collection('users').doc(user.uid).collection('transactions'); }
@@ -1046,14 +1060,15 @@ function setFilter(f, el) {
   renderHistory();
 }
 
+// ★ 更新：設定強制防呆邏輯
 const TYPE_MAP = { 
-  '期初設定':{w:'入庫',c:'收入'},
-  '一般進貨':{w:'入庫',c:'支出'},
-  '舊金回收':{w:'入庫',c:'支出'},
-  '成品繳庫':{w:'入庫',c:'支出'},
-  '一般銷售':{w:'出庫',c:'收入'},
-  '師傅領料':{w:'出庫',c:'支出'},
-  '損耗核銷':{w:'出庫',c:'支出'} 
+  '期初設定': { w: '入庫', c: '收入', lock: false },
+  '一般進貨': { w: '入庫', c: '支出', lock: true },
+  '一般銷售': { w: '出庫', c: '收入', lock: true },
+  '舊金回收': { w: '入庫', c: '支出', lock: true },
+  '師傅領料': { w: '出庫', c: '支出', lock: true },
+  '成品繳庫': { w: '入庫', c: '支出', lock: true },
+  '損耗核銷': { w: '出庫', c: '支出', lock: true } 
 };
 
 function pickType(type, el) {
@@ -1061,19 +1076,36 @@ function pickType(type, el) {
   el.classList.add('active');
   fState.type = type;
   const d = TYPE_MAP[type];
-  if (d) { setWDir(d.w); setCDir(d.c); }
+  if (d) { 
+    setWDir(d.w); 
+    setCDir(d.c); 
+    
+    // ★ 執行防呆視覺鎖定 (鎖定不合邏輯的選項)
+    const wIn = document.getElementById('wd-in');
+    const wOut = document.getElementById('wd-out');
+    const cIn = document.getElementById('cd-in');
+    const cOut = document.getElementById('cd-out');
+    
+    wIn.classList.remove('locked'); wOut.classList.remove('locked');
+    cIn.classList.remove('locked'); cOut.classList.remove('locked');
+    
+    if (d.lock) {
+      if (d.w === '入庫') wOut.classList.add('locked'); else wIn.classList.add('locked');
+      if (d.c === '收入') cOut.classList.add('locked'); else cIn.classList.add('locked');
+    }
+  }
 }
 
 function setWDir(d) {
   fState.wDir = d;
-  document.getElementById('wd-in').className = 'dir-opt'+(d==='入庫'?' in-active':'');
-  document.getElementById('wd-out').className = 'dir-opt'+(d==='出庫'?' out-active':'');
+  document.getElementById('wd-in').className = 'dir-opt' + (d==='入庫'?' in-active':'') + (document.getElementById('wd-in').classList.contains('locked')?' locked':'');
+  document.getElementById('wd-out').className = 'dir-opt' + (d==='出庫'?' out-active':'') + (document.getElementById('wd-out').classList.contains('locked')?' locked':'');
 }
 
 function setCDir(d) {
   fState.cDir = d;
-  document.getElementById('cd-in').className = 'dir-opt'+(d==='收入'?' in-active':'');
-  document.getElementById('cd-out').className = 'dir-opt'+(d==='支出'?' out-active':'');
+  document.getElementById('cd-in').className = 'dir-opt' + (d==='收入'?' in-active':'') + (document.getElementById('cd-in').classList.contains('locked')?' locked':'');
+  document.getElementById('cd-out').className = 'dir-opt' + (d==='支出'?' out-active':'') + (document.getElementById('cd-out').classList.contains('locked')?' locked':'');
 }
 
 function getNowLocal() {
@@ -1091,7 +1123,7 @@ function clearForm() {
   document.getElementById('f-err').textContent = '';
   
   const pills = document.querySelectorAll('.type-pill');
-  let targetPill = pills[1]; 
+  let targetPill = pills[1]; // 一般進貨
   pickType('一般進貨', targetPill);
 }
 
@@ -1269,16 +1301,6 @@ async function doImport(event) {
     event.target.value = ''; 
   };
   reader.readAsArrayBuffer(file);
-}
-
-function showAbout() {
-  alert('貴金屬出入庫存系統 v1.0.0\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
-}
-
-function toast(msg, type='') {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.className = 'show ' + type;
-  setTimeout(()=>{ t.className=''; }, 3000);
 }
 </script>
 </body>
