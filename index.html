@@ -22,7 +22,6 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --gold: #c9a84c; --gold-light: #f0d78c; --gold-dark: #8a6a00;
-      /* ★ 深色模式微調：讓背景更有層次，不再死黑 */
       --bg: #0d0d0d; --bg2: #1c1c1e; --bg3: #2c2c2e; --bg4: #3a3a3c;
       --text: #ffffff; --text2: #e0e0e0; --text3: #a0a0a5;
       --green: #32d74b; --green-bg: #0a2416; --red: #ff453a; --red-bg: #2b0d0d;
@@ -65,7 +64,7 @@
     .input-field { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 11px; padding: 14px; color: var(--text); font-size: 16px; outline: none; transition: border-color 0.2s; font-family: inherit; -webkit-appearance: none; }
     input[type="datetime-local"] { color-scheme: dark; }
     .input-field:focus { border-color: var(--gold); }
-    .btn-primary { width: 100%; background: linear-gradient(135deg, #c9a84c, #e8c96a); border: none; border-radius: 12px; padding: 15px; color: #1a1200; font-size: 17px; font-weight: bold; cursor: pointer; font-family: inherit; transition: opacity 0.2s; display: block; box-shadow: 0 4px 15px rgba(201,168,76,0.3); }
+    .btn-primary { width: 100%; background: linear-gradient(135deg, #c9a84c, #e8c96a); border: none; border-radius: 12px; padding: 15px; color: #1a1200; font-size: 17px; font-weight: bold; cursor: pointer; font-family: inherit; transition: opacity 0.2s; -webkit-appearance: none; display: block; box-shadow: 0 4px 15px rgba(201,168,76,0.3); }
     .btn-primary:active { opacity: 0.8; }
     .btn-primary:disabled { opacity: 0.5; }
     .divider-or { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
@@ -97,7 +96,7 @@
     .nav-add-btn { width: 54px; height: 54px; border-radius: 50%; background: linear-gradient(135deg, #c9a84c, #f0d78c); display: flex; align-items: center; justify-content: center; position: relative; top: -18px; box-shadow: 0 4px 20px rgba(201,168,76,0.45); }
     .nav-add-label { font-size: 12px; color: var(--gold); font-weight: bold; margin-top: -14px; }
 
-    /* Dashboard & Cards (加入陰影增加立體感) */
+    /* Dashboard & Cards */
     .dash-scroll { overflow-y: auto; flex: 1; padding: 14px 14px 0; -webkit-overflow-scrolling: touch; }
     .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
     .stat-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 14px; padding: 14px 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
@@ -152,12 +151,11 @@
     .chart-toggle-btn { width: 100%; padding: 12px; background: #1c1600; color: var(--gold); border: 0.5px solid var(--gold); border-radius: 10px; margin-bottom: 12px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
     .chart-container { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 14px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     
-    /* ★ 時間區間切換按鈕 */
     .chart-ranges { display: flex; gap: 6px; margin-bottom: 12px; justify-content: center; }
     .cr-btn { flex: 1; padding: 6px; background: var(--bg3); color: var(--text2); border: 0.5px solid var(--border); border-radius: 8px; font-size: 12px; cursor: pointer; text-align: center; transition: 0.2s; }
     .cr-btn.active { background: var(--gold); color: #000; font-weight: bold; border-color: var(--gold); }
 
-    /* ★ 月份選單與期初按鈕並排 */
+    /* 月份選單與期初按鈕並排 */
     .history-controls { display: flex; gap: 8px; margin-bottom: 12px; }
     .month-selector { flex: 1; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--gold-light); font-size: 15px; font-weight: bold; outline: none; font-family: inherit; -webkit-appearance: none; cursor: pointer; text-align: center; }
     .btn-initial { flex: 0 0 auto; background: #1a1200; border: 0.5px solid var(--gold); border-radius: 10px; padding: 12px 16px; color: var(--gold); font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; }
@@ -402,12 +400,13 @@
       <div class="history-scroll">
         <button class="chart-toggle-btn" onclick="toggleChart()">📊 點此查看 / 隱藏結餘走勢圖</button>
         <div class="chart-container" id="chart-wrap">
-          <div class="chart-ranges">
+          <div class="chart-ranges" id="chart-range-buttons">
             <button class="cr-btn" onclick="setChartRange('30', this)">近 30 天</button>
             <button class="cr-btn active" onclick="setChartRange('month', this)">本月</button>
             <button class="cr-btn" onclick="setChartRange('year', this)">今年</button>
             <button class="cr-btn" onclick="setChartRange('all', this)">全部</button>
           </div>
+          <div style="font-size: 12px; color: var(--text3); text-align: center; margin-bottom: 8px;">圖表根據下方選定之「月份/區間」精準繪製</div>
           <canvas id="trendChart" height="180"></canvas>
         </div>
 
@@ -560,7 +559,7 @@
           <div class="mi-arrow" style="font-size: 14px;" id="alert-level-text">未設定 ›</div>
         </div>
 
-        <div class="menu-item" onclick="recalcAllStats()">
+        <div class="menu-item" onclick="recalcAllStats(true)">
           <div class="mi-left"><div class="mi-icon" style="background:#0d1a2b; color:#4ea8de;">🔄</div><div class="mi-label" style="color:#4ea8de;">重新校正資料快取</div></div>
           <div class="mi-arrow" style="color:#4ea8de;">›</div>
         </div>
@@ -586,7 +585,7 @@
         </div>
 
         <div class="menu-item" onclick="deleteAllTx()" style="border-color: rgba(229,107,78,0.4); margin-top: 24px;">
-          <div class="mi-left"><div class="mi-icon" style="background:var(--red-bg); color:var(--red);">🗑️</div><div class="mi-label" style="color:var(--red);">清除所有紀錄</div></div>
+          <div class="mi-left"><div class="mi-icon" style="background:var(--red-bg); color:var(--red);">🗑️</div><div class="mi-label" style="color:var(--red);">清除目前區間紀錄</div></div>
           <div class="mi-arrow" style="color:var(--red);">›</div>
         </div>
 
@@ -657,7 +656,7 @@ const db = firebase.firestore();
 
 // State & Cache
 let user = null;
-let allTx = []; // 僅供匯出備份使用
+let allTx = []; // 僅供匯出備份與完整快取計算使用
 let recentTx = []; // 首頁專用：最新 30 筆快取
 let historyTx = []; // 歷史專用：依據所選區間抓取的資料
 let curFilter = '全部';
@@ -672,6 +671,9 @@ let lastScreen = 'home';
 // ★ 獨立統計快取變數 (解決全域讀取效能問題)
 let globalStats = { totalW: 0, totalC: 0, monthly: {}, initialMonth: '' };
 let renderLimit = 20;
+
+// Pagination & Chart state
+let currentChartRange = 'month'; // 預設顯示本月
 
 // 限制次數管理邏輯
 function getActionCount(actionType) {
@@ -696,7 +698,7 @@ function initMonthSelector() {
   const nowMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
   
   let months = new Set(Object.keys(globalStats.monthly || {}));
-  months.add(nowMonth); // 強制加入本月
+  months.add(nowMonth); // 強制加入本月選項
   
   const sortedMonths = Array.from(months).sort().reverse();
   
@@ -710,7 +712,7 @@ function initMonthSelector() {
       selector.value = currentVal;
   }
   
-  // 顯示或隱藏「跳至期初」按鈕
+  // 顯示或隱藏期初按鈕
   const btnInit = document.getElementById('btn-initial');
   if (globalStats.initialMonth) {
       btnInit.style.display = 'block';
@@ -719,10 +721,12 @@ function initMonthSelector() {
   }
 }
 
-// ★ 快取重算引擎 (當初次載入、匯入或點擊重算按鈕時觸發)
-async function recalcAllStats() {
+// ★ 快取重算引擎 (防呆：當初次載入、匯入或點擊重算按鈕時觸發)
+async function recalcAllStats(showToast = false) {
     if (!user) return;
+    if (showToast) toast('正在重新計算所有歷史資料，請稍後...', 'info');
     try {
+        // 抓取雲端所有資料進行重新結算
         const snap = await db.collection('users').doc(user.uid).collection('transactions').get();
         let totalW = 0, totalC = 0;
         let monthly = {};
@@ -747,15 +751,19 @@ async function recalcAllStats() {
             }
         });
 
-        // 儲存至雲端快取
-        await db.collection('users').doc(user.uid).collection('meta').doc('stats').set({
-            totalW, totalC, monthly, initialMonth: initialMonth || ''
-        });
-        toast('快取資料重算完成！', 'success');
+        // 本機強制套用 (解決 Firebase Rule 阻擋寫入時畫面為 0 的狀況)
+        globalStats = { totalW, totalC, monthly, initialMonth: initialMonth || '' };
+        initMonthSelector();
+        refreshDash();
+        if(document.getElementById('chart-wrap').style.display === 'block') drawChart();
+
+        // 嘗試背景寫入 Firebase 以便下次秒載入
+        await db.collection('users').doc(user.uid).collection('meta').doc('stats').set(globalStats);
+        if (showToast) toast('快取校正完成！', 'success');
     } catch(e) {
-        console.error("快取計算失敗:", e);
-        if (e.message.includes('permission')) {
-             alert('⚠️ 無法更新雲端快取！您的 Firebase 權限規則設定阻擋了寫入。');
+        console.warn("快取寫入失敗 (可能為安全規則阻擋):", e);
+        if (showToast && (e.message.includes('permission') || e.code === 'permission-denied')) {
+            alert('⚠️ 無法更新雲端快取！您的 Firebase 權限規則設定阻擋了寫入。');
         }
     }
 }
@@ -908,15 +916,23 @@ function subTx() {
           refreshDash();
           if(document.getElementById('chart-wrap').style.display === 'block') drawChart();
       } else {
-          recalcAllStats(); // 若無快取，自動重算
+          // ★ 資料完整性自檢：如果 meta 不存在，強制觸發重算
+          recalcAllStats(false); 
       }
   }, err => {
-      if (err.message.includes('permission') || err.code === 'permission-denied') recalcAllStats();
+      // 若權限被阻擋，退回本機計算
+      if (err.message.includes('permission') || err.code === 'permission-denied') recalcAllStats(false);
   });
 
   // 2. 首頁永遠監聽最新 30 筆
   unsubRecent = txCol().orderBy('timestamp','desc').limit(30).onSnapshot(snap => {
       recentTx = snap.docs.map(d => ({id: d.id, ...d.data()}));
+      
+      // ★ 資料完整性自檢第二層：如果有資料但 globalStats 總數為 0 且沒月份資料，觸發修復
+      if (recentTx.length > 0 && Object.keys(globalStats.monthly || {}).length === 0) {
+          recalcAllStats(false);
+      }
+
       refreshDash();
       
       const mode = document.getElementById('month-selector') ? document.getElementById('month-selector').value : 'recent';
@@ -931,13 +947,16 @@ function subTx() {
   loadHistoryMonth();
 }
 
-// ★ 月份切換邏輯
+// ★ 歷史頁面的下拉選單切換邏輯
 function loadHistoryMonth() {
     if (unsubHistory) { unsubHistory(); unsubHistory = null; }
     
     const mode = document.getElementById('month-selector').value;
+    const chartRangesBtn = document.getElementById('chart-range-buttons');
     
+    // ★ 解決 UX 衝突：只有在「全域快搜」模式下，才顯示時間區間按鈕
     if (mode === 'recent') {
+        if (chartRangesBtn) chartRangesBtn.style.display = 'flex';
         historyTx = [...recentTx];
         renderLimit = 20;
         renderHistory();
@@ -946,6 +965,8 @@ function loadHistoryMonth() {
         return;
     }
 
+    // 選擇特定月份時隱藏區間按鈕，以免圖表邏輯衝突
+    if (chartRangesBtn) chartRangesBtn.style.display = 'none';
     document.getElementById('history-list').innerHTML = '<div class="empty-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
 
     const startStr = `${mode}-01T00:00:00.000Z`;
@@ -991,7 +1012,7 @@ function checkBackupReminder() {
   }
 }
 
-// ★ 快取遞增引擎：每次異動都自動推上 Firebase
+// ★ 快取遞增引擎：每次異動都先本機反映，再推上 Firebase
 async function updateStatsCache(txData, oldTxData = null, isDelete = false) {
     if (!user) return;
     const statsRef = db.collection('users').doc(user.uid).collection('meta').doc('stats');
@@ -1031,15 +1052,23 @@ async function updateStatsCache(txData, oldTxData = null, isDelete = false) {
         if (diffC !== 0) { updates['totalC'] = firebase.firestore.FieldValue.increment(diffC); updates[`monthly.${month}.netC`] = firebase.firestore.FieldValue.increment(diffC); }
     }
 
+    // 本機即時套用，讓畫面先動
+    globalStats.totalW += (diffW - oldDiffW);
+    globalStats.totalC += (diffC - oldDiffC);
+    if (!globalStats.monthly[month]) globalStats.monthly[month] = { netW: 0, netC: 0 };
+    globalStats.monthly[month].netW += (diffW - (month === oldMonth ? oldDiffW : 0));
+    refreshDash();
+
     try {
         if (txData && txData.type === '期初設定' && (!globalStats.initialMonth || month < globalStats.initialMonth)) {
             updates['initialMonth'] = month;
+            globalStats.initialMonth = month;
         }
         if (Object.keys(updates).length > 0) {
             await statsRef.update(updates);
         }
     } catch(e) {
-        if (e.code === 'not-found') await recalcAllStats();
+        if (e.code === 'not-found') await recalcAllStats(false);
     }
 }
 
@@ -1116,7 +1145,6 @@ async function deleteAllTx() {
   }
 
   const modeText = document.getElementById('month-selector').value === 'recent' ? '最近 30 筆' : '當月';
-  
   if (historyTx.length === 0) {
     toast(`目前沒有任何紀錄可清除`, 'error');
     return;
@@ -1134,7 +1162,7 @@ async function deleteAllTx() {
     const promises = historyTx.map(tx => txColRef.doc(tx.id).delete());
     await Promise.all(promises);
     incrementActionCount('delete');
-    await recalcAllStats(); // 批量刪除後重建快取
+    await recalcAllStats(false); // 批量刪除後重建快取
     toast('紀錄已成功清除！', 'success');
     goScreen('home');
   } catch(err) {
@@ -1300,13 +1328,6 @@ function toggleChart() {
   }
 }
 
-function setChartRange(range, el) {
-  currentChartRange = range;
-  document.querySelectorAll('.cr-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  drawChart();
-}
-
 // ★ 從快取計算某月之前的「初始庫存基準點」
 function getStartingBalance(targetMonthStr) {
   let startW = 0;
@@ -1318,7 +1339,7 @@ function getStartingBalance(targetMonthStr) {
   return startW;
 }
 
-// ★ 圖表精準連動當前查詢結果
+// ★ 圖表精準重構：分離 全域快搜模式 與 特定月份模式
 function drawChart() {
   const ctx = document.getElementById('trendChart').getContext('2d');
   if (trendChart) trendChart.destroy();
@@ -1329,7 +1350,7 @@ function drawChart() {
   let data = [];
 
   if (mode === 'recent') {
-      // 模式：從全域目前結餘倒推回去
+      // ★ 全域快搜模式 (顯示區間按鈕，從目前總庫存往回推算)
       let currentBal = globalStats.totalW || 0;
       const dayGroups = {};
       const revSorted = [...historyTx].sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0));
@@ -1344,7 +1365,6 @@ function drawChart() {
       const sortedDays = Object.keys(dayGroups).sort((a,b) => b.localeCompare(a)); 
       let tempBal = currentBal;
       
-      // 注意：若是看 recent 30 筆，倒推起點會顯示目前的最後一筆，依序扣回
       sortedDays.forEach(d => {
           points.push({ x: d, y: tempBal });
           tempBal -= dayGroups[d]; 
@@ -1352,8 +1372,28 @@ function drawChart() {
       points.reverse(); 
       labels = points.map(p => p.x);
       data = points.map(p => p.y);
+
+      // 套用圖表上方時間按鈕的過濾條件
+      const now = new Date();
+      let cutoffDate = null;
+      if (currentChartRange === '7') {
+        cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0,10);
+      } else if (currentChartRange === '30') {
+        cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0,10);
+      } else if (currentChartRange === 'year') {
+        cutoffDate = now.getFullYear() + '-01-01';
+      }
+
+      if (cutoffDate) {
+          const filterIdx = labels.findIndex(l => l >= cutoffDate);
+          if(filterIdx !== -1) { 
+              labels = labels.slice(filterIdx); 
+              data = data.slice(filterIdx); 
+          }
+      }
+
   } else {
-      // 模式：選定特定月份，從快取找出期初餘額往上加
+      // ★ 特定月份模式 (隱藏區間按鈕，精準畫出該月走勢)
       let startW = getStartingBalance(mode);
       let runW = startW;
       
@@ -1376,25 +1416,6 @@ function drawChart() {
       if (labels.length === 0) {
           labels = [`${mode}-01`];
           data = [startW];
-      }
-  }
-
-  // 根據選擇的時間按鈕進行過濾
-  const now = new Date();
-  let cutoffDate = null;
-  if (currentChartRange === '7') {
-    cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0,10);
-  } else if (currentChartRange === '30') {
-    cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0,10);
-  } else if (currentChartRange === 'year') {
-    cutoffDate = now.getFullYear() + '-01-01';
-  }
-
-  if (cutoffDate) {
-      const filterIdx = labels.findIndex(l => l >= cutoffDate);
-      if(filterIdx !== -1) { 
-          labels = labels.slice(filterIdx); 
-          data = data.slice(filterIdx); 
       }
   }
 
@@ -1428,6 +1449,13 @@ function drawChart() {
   });
 }
 
+function setChartRange(range, el) {
+  currentChartRange = range;
+  document.querySelectorAll('.cr-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  drawChart();
+}
+
 function onSearchInput() {
   renderLimit = 20; 
   renderHistory();
@@ -1456,7 +1484,7 @@ function renderHistory() {
 
   const el = document.getElementById('history-list');
   if (filtered.length === 0) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">無相符資料</div></div>';
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">當前區間無相符資料</div></div>';
     return;
   }
 
@@ -1622,7 +1650,6 @@ function calcValue() {
   document.getElementById('cv-total').textContent = 'NT$ ' + total.toLocaleString();
 }
 
-// ★ 全域匯出備份 (點擊時才消耗一次完整讀取額度)
 async function doExport() {
   toast('正在擷取完整資料，請稍後...', '');
   try {
@@ -1764,7 +1791,7 @@ async function doImport(event) {
 
       await Promise.all(promises);
       incrementActionCount('import');
-      await recalcAllStats(); // 重新校正快取
+      await recalcAllStats(false); // 重新校正快取
       alert(`匯入完成！成功還原 ${importedCount} 筆紀錄。`);
       
       const selector = document.getElementById('month-selector');
