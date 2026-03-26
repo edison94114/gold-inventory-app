@@ -656,7 +656,6 @@ const db = firebase.firestore();
 
 // State & Cache
 let user = null;
-let allTx = []; // 僅供匯出備份使用
 let recentTx = []; // 首頁專用：最新 30 筆快取
 let historyTx = []; // 歷史專用：依據所選區間抓取的資料
 let curFilter = '全部';
@@ -1224,7 +1223,7 @@ function toggleSelectTx(id) {
         batchSelectedIds.add(id);
     }
     updateBatchCount();
-    renderHistory(); // 重新渲染以更新打勾狀態
+    renderHistory(); 
 }
 
 function updateBatchCount() {
@@ -1254,7 +1253,6 @@ async function executeBatchDelete() {
         } else {
             await Promise.all(promises);
             if (!isLimitBypassed()) incrementActionCount('delete', batchSelectedIds.size);
-            // 線上模式：刪除後呼叫背景重算並自動覆蓋
             autoHealStats(); 
             toast(`已成功刪除 ${batchSelectedIds.size} 筆紀錄！`, 'success');
             toggleBatchDelete(); 
@@ -1298,7 +1296,6 @@ function editTx(id) {
 }
 
 function showDetail(id) {
-  // 如果在批次刪除模式，點擊卡片變成選取
   if (isBatchDeleteMode) {
       toggleSelectTx(id);
       return;
@@ -1403,7 +1400,6 @@ function txCard(tx) {
   
   const meta = [dateStr, tx.target].filter(Boolean).join(' · ');
   
-  // ★ 批次刪除模式的卡片操作區
   let actionArea = `
       <div class="tx-actions">
         <button class="btn-action" onclick="event.stopPropagation(); editTx('${tx.id}')">✏️</button>
@@ -1800,7 +1796,7 @@ async function doImport(event) {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.07\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.08\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
