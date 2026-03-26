@@ -249,10 +249,10 @@
 
     /* Modal */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-    .modal-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 24px; width: 100%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    .modal-title { font-size: 18px; color: var(--gold-light); font-weight: bold; margin-bottom: 12px; }
-    .modal-text { font-size: 14px; color: var(--text2); line-height: 1.5; margin-bottom: 20px; text-align: left; }
-    .modal-btn { width: 100%; background: var(--gold); color: #000; border: none; padding: 12px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
+    .modal-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 24px; width: 100%; max-width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .modal-title { font-size: 18px; color: var(--gold-light); font-weight: bold; margin-bottom: 16px; text-align: center; }
+    .modal-text { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 24px; text-align: left; }
+    .modal-btn { flex: 1; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; border: none; font-family: inherit; }
 
     /* Toast */
     #toast { position: fixed; bottom: calc(82px + var(--sab)); left: 50%; transform: translateX(-50%) translateY(16px); background: var(--text); border: none; border-radius: 10px; padding: 12px 24px; font-size: 15px; font-weight: bold; color: var(--bg); opacity: 0; transition: all 0.25s; z-index: 99; white-space: nowrap; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
@@ -365,7 +365,7 @@
       <div class="dash-scroll">
         <div class="backup-banner" id="backup-reminder">
           <div class="backup-banner-text">💡 <b>溫馨提醒：</b>您有一段時間未備份資料，建議定期匯出 Excel 檔案以保全紀錄。</div>
-          <button class="btn-backup" onclick="doExport()">立即匯出</button>
+          <button class="btn-backup" onclick="prepareExport()">立即匯出</button>
         </div>
 
         <div class="stat-grid">
@@ -568,7 +568,7 @@
           <div class="mi-left"><div class="mi-icon" style="background:#1a0f00;">📊</div><div class="mi-label">歷史日結報表</div></div>
           <div class="mi-arrow">›</div>
         </div>
-        <div class="menu-item" onclick="doExport()">
+        <div class="menu-item" onclick="prepareExport()">
           <div class="mi-left"><div class="mi-icon" style="background:#1a1800;">📥</div><div class="mi-label">匯出備份（原生 Excel 檔）<br><span style="font-size:12px; color:var(--text3); font-weight:normal;" id="export-limit-txt">每日限 2 次</span></div></div>
           <div class="mi-arrow">›</div>
         </div>
@@ -600,15 +600,18 @@
 
     <div class="modal-overlay" id="export-modal">
         <div class="modal-box">
-            <div class="modal-title">備份下載成功！</div>
+            <div class="modal-title">📥 備份下載說明</div>
             <div class="modal-text">
-                檔案名稱：<br><b>貴金屬庫存紀錄_YYYY-MM-DD.xlsx</b><br><br>
-                <b>尋找檔案方式：</b><br>
-                📱 <b>iOS (iPhone)：</b>請開啟「檔案」App ➔ 點選「下載項目」資料夾。<br><br>
-                📱 <b>Android (安卓)：</b>請開啟「檔案/我的檔案」App ➔ 點選「下載」資料夾。<br><br>
+                檔案名稱預設為：<br><b style="color:var(--gold-light);">貴金屬庫存紀錄_YYYY-MM-DD.xlsx</b><br><br>
+                <b>⚠️ 尋找與存檔方式：</b><br>
+                📱 <b>iOS (Safari)：</b>點擊下載後，若畫面跳出檔案預覽，請點擊畫面下方「分享」圖示 ➔ 選擇「儲存到檔案」。<br><br>
+                📱 <b>Android：</b>請開啟「檔案/我的檔案」App ➔ 點選「下載」資料夾。<br><br>
                 💻 <b>電腦版：</b>請至瀏覽器的「下載」資料夾查看。
             </div>
-            <button class="modal-btn" onclick="closeExportModal()">我知道了</button>
+            <div style="display:flex; gap:10px;">
+                <button class="modal-btn" style="background:var(--bg3); color:var(--text);" onclick="closeExportModal()">取消</button>
+                <button class="modal-btn" onclick="executeExport()">了解，開始下載</button>
+            </div>
         </div>
     </div>
 
@@ -1245,7 +1248,7 @@ function toggleSelectTx(id) {
         batchSelectedIds.add(id);
     }
     updateBatchCount();
-    renderHistory(); // 重新渲染以更新打勾狀態
+    renderHistory(); 
 }
 
 function updateBatchCount() {
@@ -1275,7 +1278,6 @@ async function executeBatchDelete() {
         } else {
             await Promise.all(promises);
             if (!isLimitBypassed()) incrementActionCount('delete', batchSelectedIds.size);
-            // 線上模式：刪除後呼叫背景重算並自動覆蓋
             autoHealStats(); 
             toast(`已成功刪除 ${batchSelectedIds.size} 筆紀錄！`, 'success');
             toggleBatchDelete(); 
@@ -1319,7 +1321,6 @@ function editTx(id) {
 }
 
 function showDetail(id) {
-  // 如果在批次刪除模式，點擊卡片變成選取
   if (isBatchDeleteMode) {
       toggleSelectTx(id);
       return;
@@ -1424,7 +1425,6 @@ function txCard(tx) {
   
   const meta = [dateStr, tx.target].filter(Boolean).join(' · ');
   
-  // ★ 批次刪除模式的卡片操作區
   let actionArea = `
       <div class="tx-actions">
         <button class="btn-action" onclick="event.stopPropagation(); editTx('${tx.id}')">✏️</button>
@@ -1652,14 +1652,20 @@ function closeExportModal() {
     document.getElementById('export-modal').style.display = 'none';
 }
 
-async function doExport() {
-  if (!navigator.onLine) {
-      alert('⚠️ 離線狀態下無法執行完整匯出備份，請恢復網路連線後再試。');
-      return;
-  }
-  if (!checkActionLimit('export', 2)) return;
+function prepareExport() {
+    if (!navigator.onLine) {
+        alert('⚠️ 離線狀態下無法執行完整匯出備份，請恢復網路連線後再試。');
+        return;
+    }
+    if (!checkActionLimit('export', 2)) return;
+    
+    // 顯示下載教學 Modal
+    document.getElementById('export-modal').style.display = 'flex';
+}
 
-  toast('正在擷取完整資料，請稍後...', '');
+async function executeExport() {
+  closeExportModal();
+  toast('正在擷取完整資料，請稍後...', 'info');
   try {
       const snap = await txCol().orderBy('timestamp', 'asc').get();
       if (snap.empty) { toast('尚無資料可匯出', 'error'); return; }
@@ -1693,8 +1699,9 @@ async function doExport() {
       checkBackupReminder();
       if (!isLimitBypassed()) incrementActionCount('export');
       
-      // 顯示教學 Modal
-      document.getElementById('export-modal').style.display = 'flex';
+      setTimeout(() => {
+          alert('✅ 匯出程序已執行！\n\n請自行至手機的「檔案」或「下載」資料夾中確認檔案是否存在。');
+      }, 500);
       
   } catch(e) {
       toast('匯出失敗：' + e.message, 'error');
@@ -1829,7 +1836,7 @@ async function doImport(event) {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.09\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.10\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
