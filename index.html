@@ -252,6 +252,7 @@
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     #toast.success { background: var(--green); color: #fff; }
     #toast.error { background: var(--red); color: #fff; }
+    #toast.info { background: #0d1a2b; color: #4ea8de; }
   </style>
 </head>
 <body>
@@ -779,7 +780,9 @@ async function autoHealStats() {
         initMonthSelector();
         refreshDash();
 
-        await db.collection('users').doc(user.uid).collection('meta').doc('stats').set(globalStats);
+        if (navigator.onLine) {
+            await db.collection('users').doc(user.uid).collection('meta').doc('stats').set(globalStats);
+        }
     } catch(e) {
         console.warn("自動修復快取失敗:", e);
     }
@@ -825,6 +828,21 @@ auth.onAuthStateChanged(u => {
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('auth-screen').classList.add('active');
   }
+});
+
+// ★ 監聽網路狀態變更
+window.addEventListener('online', () => {
+    if (user) {
+        setTimeout(() => {
+            alert('🟢 網路已恢復連線！\n\n系統已自動將您離線期間的「變更紀錄」，完全同步至雲端資料庫。');
+        }, 1000);
+    }
+});
+
+window.addEventListener('offline', () => {
+    if (user) {
+        toast('📶 目前無網路連線，已切換至離線模式', 'error');
+    }
 });
 
 function switchAuthTab(tab) {
@@ -1085,7 +1103,11 @@ async function updateStatsCache(txData, oldTxData = null, isDelete = false) {
             globalStats.initialMonth = month;
         }
         if (Object.keys(updates).length > 0) {
-            await statsRef.update(updates);
+            if (navigator.onLine) {
+                await statsRef.update(updates);
+            } else {
+                statsRef.update(updates); // 離線時直接背景發送，不等待
+            }
         }
     } catch(e) {
         if (e.code === 'not-found') autoHealStats();
@@ -1128,17 +1150,24 @@ async function doSubmit() {
 
   try {
     const txColRef = db.collection('users').doc(user.uid).collection('transactions');
+    let writePromise;
+
     if (editingTxId) {
       let oldData = historyTx.find(t => t.id === editingTxId) || recentTx.find(t => t.id === editingTxId);
-      if (!oldData) { const doc = await txColRef.doc(editingTxId).get(); oldData = doc.data(); }
-      await txColRef.doc(editingTxId).update(txData);
+      if (!oldData && navigator.onLine) { const doc = await txColRef.doc(editingTxId).get(); oldData = doc.data(); }
+      writePromise = txColRef.doc(editingTxId).update(txData);
       updateStatsCache(txData, oldData, false);
-      toast('紀錄修改成功！', 'success');
     } else {
-      await txColRef.add(txData);
+      writePromise = txColRef.add(txData);
       updateStatsCache(txData, null, false);
-      incrementActionCount('add'); // 增加寫入計數
-      toast('交易已成功寫入！', 'success');
+      if (!isLimitBypassed()) incrementActionCount('add');
+    }
+
+    if (!navigator.onLine) {
+        alert('📶 離線模式啟動：\n您的操作已暫存於手機，畫面已更新。當網路恢復時，系統將自動同步至雲端。');
+    } else {
+        await writePromise;
+        toast(editingTxId ? '紀錄修改成功！' : '交易已成功寫入！', 'success');
     }
     clearForm(); 
     goScreen('history'); 
@@ -1151,12 +1180,18 @@ async function deleteTx(id) {
   if (!confirm('確定要刪除這筆紀錄嗎？\n(刪除後總庫存將自動重新計算)')) return;
   try {
     let txData = historyTx.find(t => t.id === id) || recentTx.find(t => t.id === id);
-    if (!txData) { const doc = await txCol().doc(id).get(); txData = doc.data(); }
+    if (!txData && navigator.onLine) { const doc = await txCol().doc(id).get(); txData = doc.data(); }
     
-    await txCol().doc(id).delete();
+    const delPromise = txCol().doc(id).delete();
     updateStatsCache(txData, null, true);
-    incrementActionCount('delete');
-    toast('紀錄已刪除，庫存已更新！', 'success');
+    if (!isLimitBypassed()) incrementActionCount('delete');
+
+    if (!navigator.onLine) {
+        alert('📶 離線模式啟動：\n刪除動作已暫存於本機，畫面已更新。將於連線後同步至雲端。');
+    } else {
+        await delPromise;
+        toast('紀錄已刪除，庫存已更新！', 'success');
+    }
   } catch(err) {
     toast('刪除失敗：' + err.message, 'error');
   }
@@ -1211,14 +1246,19 @@ async function executeBatchDelete() {
         const txColRef = db.collection('users').doc(user.uid).collection('transactions');
         const promises = Array.from(batchSelectedIds).map(id => txColRef.doc(id).delete());
         
-        await Promise.all(promises);
-        incrementActionCount('delete', batchSelectedIds.size);
-        
-        // 批次刪除直接在背景自檢重算最穩妥
-        autoHealStats(); 
-        toast(`已成功刪除 ${batchSelectedIds.size} 筆紀錄！`, 'success');
-        
-        toggleBatchDelete(); // 關閉批次模式
+        if (!navigator.onLine) {
+            alert(`📶 離線模式啟動：\n已將 ${batchSelectedIds.size} 筆刪除動作暫存於本機，畫面將即時更新。連線後會自動同步至雲端。`);
+            if (!isLimitBypassed()) incrementActionCount('delete', batchSelectedIds.size);
+            autoHealStats(); 
+            toggleBatchDelete();
+        } else {
+            await Promise.all(promises);
+            if (!isLimitBypassed()) incrementActionCount('delete', batchSelectedIds.size);
+            // 線上模式：刪除後呼叫背景重算並自動覆蓋
+            autoHealStats(); 
+            toast(`已成功刪除 ${batchSelectedIds.size} 筆紀錄！`, 'success');
+            toggleBatchDelete(); 
+        }
     } catch (err) {
         console.error(err);
         toast('刪除失敗：' + err.message, 'error');
@@ -1587,6 +1627,10 @@ function calcValue() {
 }
 
 async function doExport() {
+  if (!navigator.onLine) {
+      alert('⚠️ 離線狀態下無法執行完整匯出備份，請恢復網路連線後再試。');
+      return;
+  }
   if (!checkActionLimit('export', 2)) return;
 
   toast('正在擷取完整資料，請稍後...', '');
@@ -1629,6 +1673,10 @@ async function doExport() {
 }
 
 function checkImportLimit() {
+  if (!navigator.onLine) {
+      alert('⚠️ 離線狀態下無法執行還原紀錄，請恢復網路連線後再試。');
+      return;
+  }
   if (!checkActionLimit('import', 2)) return;
   document.getElementById('import-file').click();
 }
@@ -1752,7 +1800,7 @@ async function doImport(event) {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.06\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.07\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
