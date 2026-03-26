@@ -528,7 +528,7 @@
         </div>
         
         <input type="file" id="import-file" accept=".xlsx, .xls, .csv" style="display: none;" onchange="doImport(event)" />
-        <div class="menu-item" onclick="document.getElementById('import-file').click();">
+        <div class="menu-item" onclick="checkImportLimit()">
           <div class="mi-left"><div class="mi-icon" style="background:#2a1a0d;">📤</div><div class="mi-label">上傳還原紀錄 (Excel/CSV)</div></div>
           <div class="mi-arrow">›</div>
         </div>
@@ -606,6 +606,23 @@ let unsubTx = null;
 let trendChart = null;
 let editingTxId = null;
 let lastScreen = 'home'; 
+
+// ★ 限制次數管理邏輯 (每天重置)
+function getActionCount(actionType) {
+  const today = new Date().toISOString().slice(0,10);
+  const stored = localStorage.getItem(`action_${actionType}`);
+  if (stored) {
+    const data = JSON.parse(stored);
+    if (data.date === today) return data.count;
+  }
+  return 0;
+}
+
+function incrementActionCount(actionType) {
+  const today = new Date().toISOString().slice(0,10);
+  let count = getActionCount(actionType);
+  localStorage.setItem(`action_${actionType}`, JSON.stringify({ date: today, count: count + 1 }));
+}
 
 // Auth listener
 auth.onAuthStateChanged(u => {
@@ -708,7 +725,6 @@ function goBackToList() {
   goScreen(lastScreen);
 }
 
-// ★ 更新：專業級系統說明重構
 function showInstructions() {
   alert('【貴金屬庫存管理系統 - 操作指南】\n\n' +
         '本系統專為精準追蹤庫存與資金雙軌設計。\n\n' +
@@ -805,14 +821,20 @@ async function deleteTx(id) {
   }
 }
 
-// ★ 新增：清除所有紀錄功能
+// ★ 更新：清除所有紀錄功能 (含每日限額)
 async function deleteAllTx() {
+  const count = getActionCount('delete');
+  if (count >= 3) {
+    alert('⚠️ 操作受限\n為了保護雲端資料庫資源，每天限制執行「清除所有紀錄」最多 3 次。\n\n您今日的額度已用盡，請於明日再試。');
+    return;
+  }
+
   if (allTx.length === 0) {
     toast('目前沒有任何紀錄可清除', 'error');
     return;
   }
   
-  const msg = '⚠️ 警告：您即將永久清除所有交易紀錄！\n\n強烈建議您在執行此操作前先【匯出備份】。\n系統不保證後續上傳的舊資料能完全正常覆蓋或相容。\n\n請問確定要繼續刪除嗎？';
+  const msg = `⚠️ 警告：您即將永久清除所有交易紀錄！\n\n強烈建議您在執行此操作前先【匯出備份】。\n系統不保證後續上傳的舊資料能完全正常覆蓋或相容。\n\n(今日尚可執行次數：${3 - count} 次)\n請問確定要繼續刪除嗎？`;
   if (!confirm(msg)) return;
 
   const confirm2 = confirm('此操作無法復原！再次確認是否「清除所有紀錄」？');
@@ -820,9 +842,9 @@ async function deleteAllTx() {
 
   toast('正在清除資料...', '');
   try {
-    // 透過迴圈刪除使用者的所有文件
     const promises = allTx.map(tx => txCol().doc(tx.id).delete());
     await Promise.all(promises);
+    incrementActionCount('delete'); // 增加次數
     toast('所有紀錄已成功清除！', 'success');
     goScreen('home');
   } catch(err) {
@@ -1091,7 +1113,6 @@ function setFilter(f, el) {
   renderHistory();
 }
 
-// ★ 更新：設定強制防呆邏輯
 const TYPE_MAP = { 
   '期初設定': { w: '入庫', c: '收入', lock: false },
   '一般進貨': { w: '入庫', c: '支出', lock: true },
@@ -1111,7 +1132,6 @@ function pickType(type, el) {
     setWDir(d.w); 
     setCDir(d.c); 
     
-    // ★ 執行防呆視覺鎖定 (鎖定不合邏輯的選項)
     const wIn = document.getElementById('wd-in');
     const wOut = document.getElementById('wd-out');
     const cIn = document.getElementById('cd-in');
@@ -1154,7 +1174,7 @@ function clearForm() {
   document.getElementById('f-err').textContent = '';
   
   const pills = document.querySelectorAll('.type-pill');
-  let targetPill = pills[1]; // 一般進貨
+  let targetPill = pills[1]; 
   pickType('一般進貨', targetPill);
 }
 
@@ -1245,11 +1265,24 @@ function doExport() {
   toast('Excel 報表已成功匯出！', 'success');
 }
 
+// ★ 檢查匯入次數限制
+function checkImportLimit() {
+  const count = getActionCount('import');
+  if (count >= 3) {
+    alert('⚠️ 操作受限\n為了保護雲端資料庫資源，每天限制執行「上傳還原紀錄」最多 3 次。\n\n您今日的額度已用盡，請於明日再試。');
+    return;
+  }
+  document.getElementById('import-file').click();
+}
+
 async function doImport(event) {
   const file = event.target.files[0];
   if (!file) return;
   
-  if (!confirm('警告：此操作會將檔案內的紀錄「新增」至您目前的帳號中。\n若為還原空帳號則沒問題；若原本已有資料，可能會產生重複。\n確定要繼續匯入嗎？')) {
+  const count = getActionCount('import');
+  const msg = `警告：此操作會將檔案內的紀錄「新增」至您目前的帳號中。\n\n🔥【強烈建議】：在還原前請先至帳號頁面「清除所有紀錄」，以免資料重複疊加！\n\n(今日尚可執行次數：${3 - count} 次)\n請問確定要繼續匯入嗎？`;
+  
+  if (!confirm(msg)) {
     event.target.value = '';
     return;
   }
@@ -1270,7 +1303,7 @@ async function doImport(event) {
 
       toast('開始讀取並匯入，請稍候...', '');
       
-      let count = 0;
+      let importedCount = 0;
       const promises = [];
       
       for (let i = 1; i < json.length; i++) {
@@ -1290,10 +1323,7 @@ async function doImport(event) {
           txDate = new Date(String(dateVal).replace(/-/g, '/').replace('T', ' ')); 
         }
 
-        if (isNaN(txDate.getTime())) {
-          console.warn('略過無效日期的資料：', dateVal);
-          continue; 
-        }
+        if (isNaN(txDate.getTime())) continue;
 
         const outW = parseFloat(row[4]) || 0;
         const inW = parseFloat(row[5]) || 0;
@@ -1328,16 +1358,17 @@ async function doImport(event) {
         };
         
         promises.push(txCol().add(txData));
-        count++;
+        importedCount++;
       }
       
-      if (count === 0) {
+      if (importedCount === 0) {
         alert('匯入失敗：檔案中沒有發現可辨識的交易紀錄，請確保格式與系統匯出的 Excel 一致。');
         return;
       }
 
       await Promise.all(promises);
-      alert(`匯入完成！成功還原 ${count} 筆紀錄。`);
+      incrementActionCount('import'); // 增加次數
+      alert(`匯入完成！成功還原 ${importedCount} 筆紀錄。`);
       goScreen('home'); 
       
     } catch(err) {
