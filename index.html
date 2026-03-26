@@ -555,24 +555,19 @@
           <div class="mi-left"><div class="mi-icon" style="background:#2a2a0d; color:var(--gold);">🔔</div><div class="mi-label">庫存預警設定</div></div>
           <div class="mi-arrow" style="font-size: 14px;" id="alert-level-text">未設定 ›</div>
         </div>
-
-        <div class="menu-item" onclick="recalcAllStats(true)">
-          <div class="mi-left"><div class="mi-icon" style="background:#0d1a2b; color:#4ea8de;">🔄</div><div class="mi-label" style="color:#4ea8de;">重新校正資料快取</div></div>
-          <div class="mi-arrow" style="color:#4ea8de;">›</div>
-        </div>
         
         <div class="menu-item" onclick="goScreen('daily')">
           <div class="mi-left"><div class="mi-icon" style="background:#1a0f00;">📊</div><div class="mi-label">歷史日結報表</div></div>
           <div class="mi-arrow">›</div>
         </div>
         <div class="menu-item" onclick="doExport()">
-          <div class="mi-left"><div class="mi-icon" style="background:#1a1800;">📥</div><div class="mi-label">匯出備份（原生 Excel 檔）<br><span style="font-size:12px; color:var(--text3); font-weight:normal;">每日限 2 次</span></div></div>
+          <div class="mi-left"><div class="mi-icon" style="background:#1a1800;">📥</div><div class="mi-label">匯出備份（原生 Excel 檔）<br><span style="font-size:12px; color:var(--text3); font-weight:normal;" id="export-limit-txt">每日限 2 次</span></div></div>
           <div class="mi-arrow">›</div>
         </div>
         
         <input type="file" id="import-file" accept=".xlsx, .xls, .csv" style="display: none;" onchange="doImport(event)" />
         <div class="menu-item" onclick="checkImportLimit()">
-          <div class="mi-left"><div class="mi-icon" style="background:#2a1a0d;">📤</div><div class="mi-label">上傳還原紀錄 (Excel/CSV)<br><span style="font-size:12px; color:var(--text3); font-weight:normal;">每日限 2 次</span></div></div>
+          <div class="mi-left"><div class="mi-icon" style="background:#2a1a0d;">📤</div><div class="mi-label">上傳還原紀錄 (Excel/CSV)<br><span style="font-size:12px; color:var(--text3); font-weight:normal;" id="import-limit-txt">每日限 2 次</span></div></div>
           <div class="mi-arrow">›</div>
         </div>
 
@@ -682,6 +677,17 @@ function isLimitBypassed() {
     return user && user.email === 'edison94114@gmail.com';
 }
 
+// ★ 管理 UI 權限限制顯示
+function applyAdminUI() {
+    if (isLimitBypassed()) {
+        document.getElementById('export-limit-txt').textContent = '管理員無限制';
+        document.getElementById('import-limit-txt').textContent = '管理員無限制';
+    } else {
+        document.getElementById('export-limit-txt').textContent = '每日限 2 次';
+        document.getElementById('import-limit-txt').textContent = '每日限 2 次';
+    }
+}
+
 // 限制次數管理邏輯
 function getActionCount(actionType) {
   const today = new Date().toISOString().slice(0,10);
@@ -704,7 +710,7 @@ function checkActionLimit(actionType, maxLimit, requestAmount = 1) {
   if (isLimitBypassed()) return true;
   const currentCount = getActionCount(actionType);
   if (currentCount + requestAmount > maxLimit) {
-      alert(`⚠️ 操作受限\n為了保護資料庫，每日限制 ${actionType === 'add' ? '新增' : (actionType === 'delete' ? '刪除' : '操作')}最多 ${maxLimit} 筆。\n您今日剩餘額度不足，請於明日再試。`);
+      alert(`⚠️ 操作受限\n為了保護資料庫，每日限制 ${actionType === 'add' ? '新增' : (actionType === 'delete' ? '刪除' : '操作')} 最多 ${maxLimit} 筆。\n您今日剩餘額度不足，請於明日再試。`);
       return false;
   }
   return true;
@@ -739,11 +745,9 @@ function initMonthSelector() {
   }
 }
 
-// 快取重算引擎
-async function recalcAllStats(showToast = false) {
+// 自動修復引擎 (背景執行)
+async function autoHealStats() {
     if (!user) return;
-    if (showToast) toast('正在重新計算所有歷史資料，請稍後...', 'info');
-    
     try {
         const snap = await db.collection('users').doc(user.uid).collection('transactions').get();
         let totalW = 0, totalC = 0;
@@ -776,12 +780,8 @@ async function recalcAllStats(showToast = false) {
         refreshDash();
 
         await db.collection('users').doc(user.uid).collection('meta').doc('stats').set(globalStats);
-        if (showToast) toast('快取校正完成！', 'success');
     } catch(e) {
-        console.warn("快取寫入失敗:", e);
-        if (showToast && (e.message.includes('permission') || e.code === 'permission-denied')) {
-            alert('⚠️ 無法更新雲端快取！您的 Firebase 權限規則設定阻擋了寫入。但本機數字已重新校正。');
-        }
+        console.warn("自動修復快取失敗:", e);
     }
 }
 
@@ -798,6 +798,8 @@ auth.onAuthStateChanged(u => {
     
     const alertVal = localStorage.getItem(`alert_${user.uid}`);
     document.getElementById('alert-level-text').innerHTML = alertVal ? `${alertVal} 錢 ›` : '未設定 ›';
+
+    applyAdminUI(); // 套用特權 UI 設定
 
     const cachedStats = localStorage.getItem(`globalStats_${user.uid}`);
     if (cachedStats) {
@@ -945,17 +947,17 @@ function subTx() {
           initMonthSelector();
           refreshDash();
       } else {
-          recalcAllStats(false);
+          autoHealStats();
       }
   }, err => {
-      if (err.message.includes('permission') || err.code === 'permission-denied') recalcAllStats(false);
+      if (err.message.includes('permission') || err.code === 'permission-denied') autoHealStats();
   });
 
   unsubRecent = txCol().orderBy('timestamp','desc').limit(30).onSnapshot(snap => {
       recentTx = snap.docs.map(d => ({id: d.id, ...d.data()}));
       
       if (recentTx.length > 0 && Object.keys(globalStats.monthly || {}).length === 0) {
-          recalcAllStats(false);
+          autoHealStats();
       }
 
       refreshDash();
@@ -1086,7 +1088,7 @@ async function updateStatsCache(txData, oldTxData = null, isDelete = false) {
             await statsRef.update(updates);
         }
     } catch(e) {
-        if (e.code === 'not-found') await recalcAllStats(false);
+        if (e.code === 'not-found') autoHealStats();
     }
 }
 
@@ -1212,8 +1214,8 @@ async function executeBatchDelete() {
         await Promise.all(promises);
         incrementActionCount('delete', batchSelectedIds.size);
         
-        // 批次刪除直接重算快取最為穩妥
-        await recalcAllStats(false); 
+        // 批次刪除直接在背景自檢重算最穩妥
+        autoHealStats(); 
         toast(`已成功刪除 ${batchSelectedIds.size} 筆紀錄！`, 'success');
         
         toggleBatchDelete(); // 關閉批次模式
@@ -1619,7 +1621,7 @@ async function doExport() {
       XLSX.writeFile(wb, '貴金屬庫存紀錄_'+new Date().toISOString().slice(0,10)+'.xlsx');
       localStorage.setItem('lastBackupDate', Date.now());
       checkBackupReminder();
-      incrementActionCount('export');
+      if (!isLimitBypassed()) incrementActionCount('export');
       toast('Excel 報表已成功匯出！', 'success');
   } catch(e) {
       toast('匯出失敗：' + e.message, 'error');
@@ -1725,8 +1727,8 @@ async function doImport(event) {
       }
 
       await Promise.all(promises);
-      incrementActionCount('import');
-      await recalcAllStats(false); 
+      if (!bypass) incrementActionCount('import');
+      autoHealStats(); 
       alert(`匯入完成！成功還原 ${importedCount} 筆紀錄。`);
       
       const selector = document.getElementById('month-selector');
@@ -1750,7 +1752,7 @@ async function doImport(event) {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.05\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.06\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
