@@ -65,7 +65,7 @@
     .input-field:focus { border-color: var(--gold); }
     .btn-primary { width: 100%; background: linear-gradient(135deg, #c9a84c, #e8c96a); border: none; border-radius: 12px; padding: 15px; color: #1a1200; font-size: 17px; font-weight: bold; cursor: pointer; font-family: inherit; transition: opacity 0.2s; display: block; box-shadow: 0 4px 15px rgba(201,168,76,0.3); }
     .btn-primary:active { opacity: 0.8; }
-    .btn-primary:disabled { opacity: 0.5; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .divider-or { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
     .divider-or::before, .divider-or::after { content: ''; flex: 1; height: 0.5px; background: var(--border); }
     .divider-or span { font-size: 13px; color: var(--text3); }
@@ -136,6 +136,10 @@
     .tx-actions { margin-left: 4px; padding-left: 6px; border-left: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; align-items: center; }
     .btn-action { background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 4px; opacity: 0.8; transition: opacity 0.2s; }
     .btn-action:active { opacity: 0.4; }
+
+    /* 批次刪除核取方塊 */
+    .batch-checkbox { width: 20px; height: 20px; accent-color: var(--red); margin-left: 8px; cursor: pointer; }
+    .batch-delete-bar { position: sticky; bottom: 0; left: 0; width: 100%; background: var(--bg2); padding: 12px; border-top: 1px solid var(--border); display: none; align-items: center; justify-content: space-between; box-shadow: 0 -4px 12px rgba(0,0,0,0.3); z-index: 5; }
     
     .btn-load-more { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px; color: var(--gold); font-size: 14px; cursor: pointer; margin: 10px 0 20px; text-align: center; font-weight: bold; transition: background 0.2s; }
     .btn-load-more:active { background: var(--bg4); }
@@ -146,7 +150,7 @@
     .empty-sub { font-size: 14px; color: var(--text3); margin-top: 6px; }
 
     /* History */
-    .history-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
+    .history-scroll { overflow-y: auto; flex: 1; padding: 14px; position: relative; -webkit-overflow-scrolling: touch; }
     .history-controls { display: flex; gap: 8px; margin-bottom: 12px; }
     .month-selector { flex: 1; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--gold-light); font-size: 15px; font-weight: bold; outline: none; font-family: inherit; -webkit-appearance: none; cursor: pointer; text-align: center; }
     .btn-initial { flex: 0 0 auto; background: #1a1200; border: 0.5px solid var(--gold); border-radius: 10px; padding: 12px 16px; color: var(--gold); font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; }
@@ -154,6 +158,9 @@
     .search-bar { margin-bottom: 12px; }
     .search-input { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 14px 12px 38px; color: var(--text); font-size: 15px; outline: none; background-image: url('data:image/svg+xml;utf8,<svg fill="%23a0a0a5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'); background-repeat: no-repeat; background-position: 10px center; background-size: 20px; transition: border-color 0.2s; }
     .search-input:focus { border-color: var(--gold); }
+
+    .filter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .btn-batch { font-size: 13px; color: var(--red); background: var(--red-bg); border: 0.5px solid rgba(255,69,58,0.3); border-radius: 6px; padding: 4px 8px; cursor: pointer; font-weight: bold; }
 
     .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 0.5px solid var(--border); }
     .fpill { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 8px; padding: 8px 14px; font-size: 14px; color: var(--text2); cursor: pointer; flex-grow: 1; text-align: center; transition: all 0.15s; }
@@ -389,14 +396,17 @@
       </div>
       <div class="history-scroll">
 
-        <div class="history-controls">
-          <select class="month-selector" id="month-selector" onchange="loadHistoryMonth()">
-            <option value="recent">預設：全域快搜 (最近20筆起)</option>
-          </select>
-          <button class="btn-initial" id="btn-initial" onclick="jumpToInitial()" style="display: none;">🚩 跳至期初</button>
+        <div class="filter-header">
+          <div class="history-controls" style="margin-bottom:0; flex:1;">
+            <select class="month-selector" id="month-selector" onchange="loadHistoryMonth()" style="margin-bottom:0;">
+              <option value="recent">預設：全域快搜 (最近20筆起)</option>
+            </select>
+            <button class="btn-initial" id="btn-initial" onclick="jumpToInitial()" style="display: none;">🚩 跳至期初</button>
+          </div>
+          <button class="btn-batch" id="btn-toggle-batch" onclick="toggleBatchDelete()" style="margin-left:8px;">🗑️ 批次刪除</button>
         </div>
 
-        <div class="search-bar">
+        <div class="search-bar" style="margin-top: 12px;">
           <input type="text" class="search-input" id="search-input" placeholder="在當前區間內搜尋關鍵字..." oninput="onSearchInput()">
         </div>
 
@@ -411,6 +421,14 @@
           <div class="fpill" onclick="setFilter('損耗核銷',this)">損耗核銷</div>
         </div>
         <div id="history-list"></div>
+      </div>
+      
+      <div class="batch-delete-bar" id="batch-delete-bar">
+        <span style="font-size:14px; font-weight:bold;"><span id="batch-count">0</span> 筆已選</span>
+        <div style="display:flex; gap:8px;">
+          <button style="padding:8px 12px; border-radius:8px; border:none; background:var(--bg3); color:var(--text); font-weight:bold;" onclick="toggleBatchDelete()">取消</button>
+          <button style="padding:8px 12px; border-radius:8px; border:none; background:var(--red); color:#fff; font-weight:bold;" onclick="executeBatchDelete()">刪除選取資料</button>
+        </div>
       </div>
     </div>
 
@@ -548,24 +566,19 @@
           <div class="mi-arrow">›</div>
         </div>
         <div class="menu-item" onclick="doExport()">
-          <div class="mi-left"><div class="mi-icon" style="background:#1a1800;">📥</div><div class="mi-label">匯出備份（原生 Excel 檔）</div></div>
+          <div class="mi-left"><div class="mi-icon" style="background:#1a1800;">📥</div><div class="mi-label">匯出備份（原生 Excel 檔）<br><span style="font-size:12px; color:var(--text3); font-weight:normal;">每日限 2 次</span></div></div>
           <div class="mi-arrow">›</div>
         </div>
         
         <input type="file" id="import-file" accept=".xlsx, .xls, .csv" style="display: none;" onchange="doImport(event)" />
         <div class="menu-item" onclick="checkImportLimit()">
-          <div class="mi-left"><div class="mi-icon" style="background:#2a1a0d;">📤</div><div class="mi-label">上傳還原紀錄 (Excel/CSV)</div></div>
+          <div class="mi-left"><div class="mi-icon" style="background:#2a1a0d;">📤</div><div class="mi-label">上傳還原紀錄 (Excel/CSV)<br><span style="font-size:12px; color:var(--text3); font-weight:normal;">每日限 2 次</span></div></div>
           <div class="mi-arrow">›</div>
         </div>
 
         <div class="menu-item" onclick="showAbout()">
           <div class="mi-left"><div class="mi-icon" style="background:#0d1a2b;">ℹ️</div><div class="mi-label">關於此應用程式</div></div>
           <div class="mi-arrow">›</div>
-        </div>
-
-        <div class="menu-item" onclick="deleteAllTx()" style="border-color: rgba(229,107,78,0.4); margin-top: 24px;">
-          <div class="mi-left"><div class="mi-icon" style="background:var(--red-bg); color:var(--red);">🗑️</div><div class="mi-label" style="color:var(--red);">清除當前區間紀錄</div></div>
-          <div class="mi-arrow" style="color:var(--red);">›</div>
         </div>
 
         <button class="btn-logout" onclick="doLogout()">登出帳號</button>
@@ -612,7 +625,6 @@
 // ★ 版本控制機制：清除舊版快取
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get('v')) {
-    // 偵測到 v=1 參數，強制清除快取並移除參數以免無限迴圈
     const currentUrl = window.location.href.split('?')[0];
     if ('caches' in window) {
         caches.keys().then(names => {
@@ -658,10 +670,17 @@ let unsubHistory = null;
 let unsubStats = null;
 let editingTxId = null;
 let lastScreen = 'home'; 
+let isBatchDeleteMode = false;
+let batchSelectedIds = new Set();
 
-// ★ 獨立統計快取變數 (解決全域讀取效能問題)
+// ★ 獨立統計快取變數
 let globalStats = { totalW: 0, totalC: 0, monthly: {}, initialMonth: '' };
 let renderLimit = 20;
+
+// ★ 特權管理員驗證
+function isLimitBypassed() {
+    return user && user.email === 'edison94114@gmail.com';
+}
 
 // 限制次數管理邏輯
 function getActionCount(actionType) {
@@ -673,17 +692,29 @@ function getActionCount(actionType) {
   }
   return 0;
 }
-function incrementActionCount(actionType) {
+
+function incrementActionCount(actionType, amount = 1) {
   const today = new Date().toISOString().slice(0,10);
   let count = getActionCount(actionType);
-  localStorage.setItem(`action_${actionType}`, JSON.stringify({ date: today, count: count + 1 }));
+  localStorage.setItem(`action_${actionType}`, JSON.stringify({ date: today, count: count + amount }));
 }
 
-// ★ 產生時間選單 (強制包含本月)
+// 檢查操作限制
+function checkActionLimit(actionType, maxLimit, requestAmount = 1) {
+  if (isLimitBypassed()) return true;
+  const currentCount = getActionCount(actionType);
+  if (currentCount + requestAmount > maxLimit) {
+      alert(`⚠️ 操作受限\n為了保護資料庫，每日限制 ${actionType === 'add' ? '新增' : (actionType === 'delete' ? '刪除' : '操作')}最多 ${maxLimit} 筆。\n您今日剩餘額度不足，請於明日再試。`);
+      return false;
+  }
+  return true;
+}
+
+// 產生時間選單
 function initMonthSelector() {
   const selector = document.getElementById('month-selector');
   const currentVal = selector.value || 'recent';
-  const nowMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+  const nowMonth = new Date().toISOString().slice(0, 7); 
   
   let months = new Set(Object.keys(globalStats.monthly || {}));
   months.add(nowMonth); // 強制加入本月選項
@@ -700,7 +731,6 @@ function initMonthSelector() {
       selector.value = currentVal;
   }
   
-  // 顯示或隱藏期初按鈕
   const btnInit = document.getElementById('btn-initial');
   if (globalStats.initialMonth) {
       btnInit.style.display = 'block';
@@ -709,7 +739,7 @@ function initMonthSelector() {
   }
 }
 
-// ★ 快取重算引擎
+// 快取重算引擎
 async function recalcAllStats(showToast = false) {
     if (!user) return;
     if (showToast) toast('正在重新計算所有歷史資料，請稍後...', 'info');
@@ -745,7 +775,6 @@ async function recalcAllStats(showToast = false) {
         initMonthSelector();
         refreshDash();
 
-        // 嘗試寫入雲端
         await db.collection('users').doc(user.uid).collection('meta').doc('stats').set(globalStats);
         if (showToast) toast('快取校正完成！', 'success');
     } catch(e) {
@@ -770,7 +799,6 @@ auth.onAuthStateChanged(u => {
     const alertVal = localStorage.getItem(`alert_${user.uid}`);
     document.getElementById('alert-level-text').innerHTML = alertVal ? `${alertVal} 錢 ›` : '未設定 ›';
 
-    // 秒開機制
     const cachedStats = localStorage.getItem(`globalStats_${user.uid}`);
     if (cachedStats) {
         try {
@@ -785,7 +813,7 @@ auth.onAuthStateChanged(u => {
     document.getElementById('main-app').style.display = 'block';
     
     clearForm(); 
-    subTx(); // 啟動雙軌背景載入
+    subTx(); 
   } else {
     user = null;
     if (unsubStats) unsubStats();
@@ -842,6 +870,10 @@ async function doLogout() { await auth.signOut(); toast('已登出'); }
 
 const SCREENS = ['home','history','add','converter','profile', 'daily', 'detail'];
 function goScreen(name) {
+  if (isBatchDeleteMode && name !== 'history') {
+      toggleBatchDelete(); // 離開歷史頁面時關閉批次刪除模式
+  }
+
   SCREENS.forEach(s => document.getElementById('screen-'+s)?.classList.toggle('active', s===name));
   if (name === 'home' || name === 'history') { lastScreen = name; }
 
@@ -877,8 +909,8 @@ function showInstructions() {
         '請選「期初設定」建立起始庫存。若補登舊紀錄，請直接修改「交易時間」，系統將自動同步所有結餘。\n\n' +
         '三、 雙軌查詢機制 (效能升級)\n' +
         '首頁永遠顯示「最新 30 筆」交易；紀錄頁可透過下拉選單精準查詢「特定月份」以減少流量消耗。\n\n' +
-        '四、 資安與備份\n' +
-        '支援背景離線操作，網路恢復即自動同步。建議定期至帳號頁面匯出 Excel 備份。');
+        '四、 批次管理與限制\n' +
+        '一般使用者每日新增上限 200 筆，刪除 100 筆。在紀錄頁支援「批次刪除」快速清理測試資料。');
 }
 
 function setStockAlert() {
@@ -904,7 +936,6 @@ function subTx() {
   if (unsubStats) unsubStats();
   if (unsubRecent) unsubRecent();
 
-  // 1. 監聽獨立統計檔
   unsubStats = db.collection('users').doc(user.uid).collection('meta').doc('stats').onSnapshot(doc => {
       if (doc.exists) {
           globalStats = doc.data();
@@ -914,18 +945,15 @@ function subTx() {
           initMonthSelector();
           refreshDash();
       } else {
-          // 如果完全沒快取，強制重算
           recalcAllStats(false);
       }
   }, err => {
       if (err.message.includes('permission') || err.code === 'permission-denied') recalcAllStats(false);
   });
 
-  // 2. 首頁永遠監聽最新 30 筆
   unsubRecent = txCol().orderBy('timestamp','desc').limit(30).onSnapshot(snap => {
       recentTx = snap.docs.map(d => ({id: d.id, ...d.data()}));
       
-      // 自檢
       if (recentTx.length > 0 && Object.keys(globalStats.monthly || {}).length === 0) {
           recalcAllStats(false);
       }
@@ -939,11 +967,9 @@ function subTx() {
       }
   });
 
-  // 3. 初始載入歷史紀錄區塊
   loadHistoryMonth();
 }
 
-// ★ 月份切換邏輯
 function loadHistoryMonth() {
     if (unsubHistory) { unsubHistory(); unsubHistory = null; }
     
@@ -965,7 +991,6 @@ function loadHistoryMonth() {
     const endMonth = startDate.getMonth() === 11 ? 0 : startDate.getMonth() + 1;
     const endDate = new Date(endYear, endMonth, 1);
 
-    // ★ 按月份區間精準載入
     unsubHistory = txCol()
         .where('timestamp', '>=', firebase.firestore.Timestamp.fromDate(startDate))
         .where('timestamp', '<', firebase.firestore.Timestamp.fromDate(endDate))
@@ -1001,7 +1026,7 @@ function checkBackupReminder() {
   }
 }
 
-// ★ 快取增量引擎 (聰明加減法，避免全域讀取)
+// 快取增量引擎
 async function updateStatsCache(txData, oldTxData = null, isDelete = false) {
     if (!user) return;
     const statsRef = db.collection('users').doc(user.uid).collection('meta').doc('stats');
@@ -1030,7 +1055,6 @@ async function updateStatsCache(txData, oldTxData = null, isDelete = false) {
         if (netW !== 0) { updates['totalW'] = firebase.firestore.FieldValue.increment(netW); updates[`monthly.${month}.netW`] = firebase.firestore.FieldValue.increment(netW); }
         if (netC !== 0) { updates['totalC'] = firebase.firestore.FieldValue.increment(netC); updates[`monthly.${month}.netC`] = firebase.firestore.FieldValue.increment(netC); }
     } else if (oldTxData && !isDelete && month !== oldMonth) {
-        // ★ 跨月份修改：將舊月的帳扣除，加到新月
         updates['totalW'] = firebase.firestore.FieldValue.increment(diffW - oldDiffW);
         updates['totalC'] = firebase.firestore.FieldValue.increment(diffC - oldDiffC);
         updates[`monthly.${month}.netW`] = firebase.firestore.FieldValue.increment(diffW);
@@ -1042,7 +1066,6 @@ async function updateStatsCache(txData, oldTxData = null, isDelete = false) {
         if (diffC !== 0) { updates['totalC'] = firebase.firestore.FieldValue.increment(diffC); updates[`monthly.${month}.netC`] = firebase.firestore.FieldValue.increment(diffC); }
     }
 
-    // 本機即時套用
     globalStats.totalW += (diffW - oldDiffW);
     globalStats.totalC += (diffC - oldDiffC);
     if (!globalStats.monthly[month]) globalStats.monthly[month] = { netW: 0, netC: 0 };
@@ -1068,6 +1091,8 @@ async function updateStatsCache(txData, oldTxData = null, isDelete = false) {
 }
 
 async function doSubmit() {
+  if (!checkActionLimit('add', 200)) return;
+
   const mace = parseFloat(document.getElementById('w-m').value) || 0;
   const amount = parseInt(document.getElementById('f-amount').value) || 0;
   const errEl = document.getElementById('f-err');
@@ -1110,6 +1135,7 @@ async function doSubmit() {
     } else {
       await txColRef.add(txData);
       updateStatsCache(txData, null, false);
+      incrementActionCount('add'); // 增加寫入計數
       toast('交易已成功寫入！', 'success');
     }
     clearForm(); 
@@ -1119,6 +1145,7 @@ async function doSubmit() {
 }
 
 async function deleteTx(id) {
+  if (!checkActionLimit('delete', 100)) return;
   if (!confirm('確定要刪除這筆紀錄嗎？\n(刪除後總庫存將自動重新計算)')) return;
   try {
     let txData = historyTx.find(t => t.id === id) || recentTx.find(t => t.id === id);
@@ -1126,44 +1153,74 @@ async function deleteTx(id) {
     
     await txCol().doc(id).delete();
     updateStatsCache(txData, null, true);
+    incrementActionCount('delete');
     toast('紀錄已刪除，庫存已更新！', 'success');
   } catch(err) {
     toast('刪除失敗：' + err.message, 'error');
   }
 }
 
-async function deleteAllTx() {
-  const count = getActionCount('delete');
-  if (count >= 3) {
-    alert('⚠️ 操作受限\n每天限制執行「清除紀錄」最多 3 次。\n您今日的額度已用盡，請於明日再試。');
-    return;
-  }
+// ★ 批次刪除邏輯
+function toggleBatchDelete() {
+    isBatchDeleteMode = !isBatchDeleteMode;
+    batchSelectedIds.clear();
+    
+    const btnToggle = document.getElementById('btn-toggle-batch');
+    const batchBar = document.getElementById('batch-delete-bar');
+    
+    if (isBatchDeleteMode) {
+        btnToggle.style.display = 'none';
+        batchBar.style.display = 'flex';
+        toast('請點選想刪除的紀錄', 'info');
+    } else {
+        btnToggle.style.display = 'block';
+        batchBar.style.display = 'none';
+    }
+    updateBatchCount();
+    renderHistory();
+}
 
-  const modeText = document.getElementById('month-selector').value === 'recent' ? '最近 30 筆' : '當月';
-  if (historyTx.length === 0) {
-    toast(`目前沒有任何紀錄可清除`, 'error');
-    return;
-  }
-  
-  const msg = `⚠️ 警告：您即將永久清除目前畫面上的【${modeText}】交易紀錄！\n\n強烈建議您在執行此操作前先匯出備份。\n(今日尚可執行次數：${3 - count} 次)\n請問確定要繼續刪除嗎？`;
-  if (!confirm(msg)) return;
+function toggleSelectTx(id) {
+    if (batchSelectedIds.has(id)) {
+        batchSelectedIds.delete(id);
+    } else {
+        batchSelectedIds.add(id);
+    }
+    updateBatchCount();
+    renderHistory(); // 重新渲染以更新打勾狀態
+}
 
-  const confirm2 = confirm('此操作無法復原！再次確認是否「清除畫面資料」？');
-  if (!confirm2) return;
+function updateBatchCount() {
+    document.getElementById('batch-count').textContent = batchSelectedIds.size;
+}
 
-  toast('正在清除資料...', '');
-  try {
-    const txColRef = db.collection('users').doc(user.uid).collection('transactions');
-    const promises = historyTx.map(tx => txColRef.doc(tx.id).delete());
-    await Promise.all(promises);
-    incrementActionCount('delete');
-    await recalcAllStats(false); // 批量刪除後強制重建快取
-    toast('紀錄已成功清除！', 'success');
-    goScreen('home');
-  } catch(err) {
-    console.error(err);
-    toast('清除失敗：' + err.message, 'error');
-  }
+async function executeBatchDelete() {
+    if (batchSelectedIds.size === 0) {
+        toast('請先選擇要刪除的紀錄', 'error');
+        return;
+    }
+    
+    if (!checkActionLimit('delete', 100, batchSelectedIds.size)) return;
+    
+    if (!confirm(`確定要刪除選取的 ${batchSelectedIds.size} 筆紀錄嗎？此動作無法復原！`)) return;
+
+    toast('正在刪除資料...', '');
+    try {
+        const txColRef = db.collection('users').doc(user.uid).collection('transactions');
+        const promises = Array.from(batchSelectedIds).map(id => txColRef.doc(id).delete());
+        
+        await Promise.all(promises);
+        incrementActionCount('delete', batchSelectedIds.size);
+        
+        // 批次刪除直接重算快取最為穩妥
+        await recalcAllStats(false); 
+        toast(`已成功刪除 ${batchSelectedIds.size} 筆紀錄！`, 'success');
+        
+        toggleBatchDelete(); // 關閉批次模式
+    } catch (err) {
+        console.error(err);
+        toast('刪除失敗：' + err.message, 'error');
+    }
 }
 
 function editTx(id) {
@@ -1199,6 +1256,12 @@ function editTx(id) {
 }
 
 function showDetail(id) {
+  // 如果在批次刪除模式，點擊卡片變成選取
+  if (isBatchDeleteMode) {
+      toggleSelectTx(id);
+      return;
+  }
+
   const tx = historyTx.find(t => t.id === id) || recentTx.find(t => t.id === id);
   if(!tx) return;
   
@@ -1298,6 +1361,23 @@ function txCard(tx) {
   
   const meta = [dateStr, tx.target].filter(Boolean).join(' · ');
   
+  // ★ 批次刪除模式的卡片操作區
+  let actionArea = `
+      <div class="tx-actions">
+        <button class="btn-action" onclick="event.stopPropagation(); editTx('${tx.id}')">✏️</button>
+        <button class="btn-action" onclick="event.stopPropagation(); deleteTx('${tx.id}')">🗑️</button>
+      </div>
+  `;
+
+  if (isBatchDeleteMode) {
+      const isChecked = batchSelectedIds.has(tx.id) ? 'checked' : '';
+      actionArea = `
+        <div class="tx-actions" style="justify-content:center;">
+          <input type="checkbox" class="batch-checkbox" ${isChecked} onclick="event.stopPropagation(); toggleSelectTx('${tx.id}')">
+        </div>
+      `;
+  }
+
   return `<div class="tx-item" onclick="showDetail('${tx.id}')">
             <div class="tx-dot">${icon}</div>
             <div class="tx-info"><div class="tx-type">${tx.type}${badgeStr}</div><div class="tx-meta">${meta||'無備註'}</div></div>
@@ -1306,10 +1386,7 @@ function txCard(tx) {
               ${cStr ? `<div class="tx-amt ${cCls}">${cStr}</div>` : ''}
               ${tx.note ? `<div class="tx-sub">${tx.note}</div>` : ''}
             </div>
-            <div class="tx-actions">
-              <button class="btn-action" onclick="event.stopPropagation(); editTx('${tx.id}')">✏️</button>
-              <button class="btn-action" onclick="event.stopPropagation(); deleteTx('${tx.id}')">🗑️</button>
-            </div>
+            ${actionArea}
           </div>`;
 }
 
@@ -1508,6 +1585,8 @@ function calcValue() {
 }
 
 async function doExport() {
+  if (!checkActionLimit('export', 2)) return;
+
   toast('正在擷取完整資料，請稍後...', '');
   try {
       const snap = await txCol().orderBy('timestamp', 'asc').get();
@@ -1540,6 +1619,7 @@ async function doExport() {
       XLSX.writeFile(wb, '貴金屬庫存紀錄_'+new Date().toISOString().slice(0,10)+'.xlsx');
       localStorage.setItem('lastBackupDate', Date.now());
       checkBackupReminder();
+      incrementActionCount('export');
       toast('Excel 報表已成功匯出！', 'success');
   } catch(e) {
       toast('匯出失敗：' + e.message, 'error');
@@ -1547,11 +1627,7 @@ async function doExport() {
 }
 
 function checkImportLimit() {
-  const count = getActionCount('import');
-  if (count >= 3) {
-    alert('⚠️ 操作受限\n每天限制執行「上傳還原紀錄」最多 3 次。\n您今日的額度已用盡，請於明日再試。');
-    return;
-  }
+  if (!checkActionLimit('import', 2)) return;
   document.getElementById('import-file').click();
 }
 
@@ -1559,8 +1635,10 @@ async function doImport(event) {
   const file = event.target.files[0];
   if (!file) return;
   
+  const bypass = isLimitBypassed();
   const count = getActionCount('import');
-  const msg = `警告：此操作會將檔案內的紀錄「新增」至您目前的帳號中。\n\n🔥【強烈建議】：在還原前請先至帳號頁面「清除所有紀錄」，以免資料重複疊加！\n\n(今日尚可執行次數：${3 - count} 次)\n請問確定要繼續匯入嗎？`;
+  const remainText = bypass ? '不限次數' : `${2 - count} 次`;
+  const msg = `警告：此操作會將檔案內的紀錄「新增」至您目前的帳號中。\n\n🔥【強烈建議】：在還原前請先至帳號頁面「清除所有紀錄」，以免資料重複疊加！\n\n(今日尚可執行次數：${remainText})\n請問確定要繼續匯入嗎？`;
   
   if (!confirm(msg)) {
     event.target.value = '';
@@ -1672,7 +1750,7 @@ async function doImport(event) {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.04\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.05\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
