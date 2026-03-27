@@ -253,6 +253,9 @@
     .modal-title { font-size: 18px; color: var(--gold-light); font-weight: bold; margin-bottom: 16px; text-align: center; }
     .modal-text { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 24px; text-align: left; }
     .modal-btn { flex: 1; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; border: none; font-family: inherit; }
+    
+    .modal-input { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 12px; color: var(--text); font-size: 16px; text-align: center; margin-bottom: 16px; outline: none; }
+    .modal-input:focus { border-color: var(--red); }
 
     /* Toast */
     #toast { position: fixed; bottom: calc(82px + var(--sab)); left: 50%; transform: translateX(-50%) translateY(16px); background: var(--text); border: none; border-radius: 10px; padding: 12px 24px; font-size: 15px; font-weight: bold; color: var(--bg); opacity: 0; transition: all 0.25s; z-index: 99; white-space: nowrap; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
@@ -571,7 +574,7 @@
 
         <div class="menu-item" onclick="forceUpdateApp()">
           <div class="mi-left"><div class="mi-icon" style="background:#0d1a2b; color:#4ea8de;">🚀</div><div class="mi-label" style="color:#4ea8de;">檢查並強制更新系統</div></div>
-          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.11</div>
+          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.12</div>
         </div>
 
         <div class="menu-item" onclick="prepareExport()">
@@ -590,7 +593,12 @@
           <div class="mi-arrow">›</div>
         </div>
 
-        <button class="btn-logout" onclick="doLogout()">登出帳號</button>
+        <div class="menu-item" onclick="promptNukeDatabase()" style="border-color: rgba(255,69,58,0.5); margin-top: 24px; background: rgba(255,69,58,0.05);">
+          <div class="mi-left"><div class="mi-icon" style="background:var(--red-bg); color:var(--red);">⚠️</div><div class="mi-label" style="color:var(--red); font-weight:bold;">清除所有線上資料 (慎用)</div></div>
+          <div class="mi-arrow" style="color:var(--red);">›</div>
+        </div>
+
+        <button class="btn-logout" onclick="doLogout()" style="margin-top: 24px;">登出帳號</button>
       </div>
     </div>
 
@@ -617,6 +625,22 @@
             <div style="display:flex; gap:10px;">
                 <button class="modal-btn" style="background:var(--bg3); color:var(--text);" onclick="closeExportModal()">取消</button>
                 <button class="modal-btn" onclick="executeExport()">了解，開始下載</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="nuke-modal">
+        <div class="modal-box" style="border-color: var(--red);">
+            <div class="modal-title" style="color: var(--red);">⚠️ 嚴重警告</div>
+            <div class="modal-text">
+                這將會<b>永久刪除</b>您在雲端與手機內的所有交易紀錄與快取資料。<br><br>
+                請確認您已經「匯出 Excel 備份」，否則資料將無法救回！<br><br>
+                若確認執行，請在下方輸入大寫的 <b>DELETE</b>：
+                <input type="text" id="nuke-verify-input" class="modal-input" placeholder="輸入 DELETE" autocomplete="off" style="margin-top: 12px;">
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="modal-btn" style="background:var(--bg3); color:var(--text);" onclick="closeNukeModal()">取消</button>
+                <button class="modal-btn" style="background:var(--red); color:#fff;" onclick="executeNukeDatabase()">確認刪除</button>
             </div>
         </div>
     </div>
@@ -649,7 +673,7 @@
 
 <script>
 // ★ 系統版本變數
-const APP_VERSION = 'v1.11';
+const APP_VERSION = 'v1.12';
 
 // ★ 版本控制機制：清除舊版快取
 const urlParams = new URLSearchParams(window.location.search);
@@ -755,7 +779,7 @@ function checkActionLimit(actionType, maxLimit, requestAmount = 1) {
   if (isLimitBypassed()) return true;
   const currentCount = getActionCount(actionType);
   if (currentCount + requestAmount > maxLimit) {
-      alert(`⚠️ 操作受限\n為了保護資料庫，每日限制 ${actionType === 'add' ? '新增' : (actionType === 'delete' ? '刪除' : '操作')} 最多 ${maxLimit} 筆。\n您今日剩餘額度不足，請於明日再試。`);
+      alert(`⚠️ 操作受限\n為了保護資料庫，每日限制 ${actionType === 'add' ? '新增' : (actionType === 'delete' ? '刪除' : '操作')} 最多 ${maxLimit} 筆/次。\n您今日剩餘額度不足，請於明日再試。`);
       return false;
   }
   return true;
@@ -843,7 +867,6 @@ auth.onAuthStateChanged(u => {
     document.getElementById('p-name').textContent = u.displayName || '用戶';
     document.getElementById('p-email').textContent = u.email || '-';
     
-    // 將上方定義的版本號寫入 UI
     document.getElementById('version-display').textContent = APP_VERSION;
     
     const alertVal = localStorage.getItem(`alert_${user.uid}`);
@@ -877,7 +900,7 @@ auth.onAuthStateChanged(u => {
   }
 });
 
-// ★ 監聽網路狀態變更
+// 監聽網路狀態變更
 window.addEventListener('online', () => {
     if (user) {
         setTimeout(() => {
@@ -998,6 +1021,7 @@ function setStockAlert() {
 
 function txCol() { return db.collection('users').doc(user.uid).collection('transactions'); }
 
+// ★ 啟動雙軌監聽與快取機制
 function subTx() {
   if (unsubStats) unsubStats();
   if (unsubRecent) unsubRecent();
@@ -1832,7 +1856,7 @@ async function doImport(event) {
       }
 
       await Promise.all(promises);
-      if (!bypass) incrementActionCount('import');
+      if (!isLimitBypassed()) incrementActionCount('import');
       autoHealStats(); 
       alert(`匯入完成！成功還原 ${importedCount} 筆紀錄。`);
       
@@ -1856,8 +1880,70 @@ async function doImport(event) {
   reader.readAsArrayBuffer(file);
 }
 
+// ★ 終極大絕招：一鍵清除線上資料庫
+function promptNukeDatabase() {
+    if (!navigator.onLine) {
+        alert('⚠️ 離線狀態下無法執行清除資料庫，請恢復網路連線後再試。');
+        return;
+    }
+    
+    if (!checkActionLimit('nuke', 1)) return; // 每日限制 1 次
+
+    document.getElementById('nuke-verify-input').value = '';
+    document.getElementById('nuke-modal').style.display = 'flex';
+}
+
+function closeNukeModal() {
+    document.getElementById('nuke-modal').style.display = 'none';
+}
+
+async function executeNukeDatabase() {
+    const verifyText = document.getElementById('nuke-verify-input').value.trim();
+    if (verifyText !== 'DELETE') {
+        alert('❌ 驗證失敗：請正確輸入大寫的 DELETE');
+        return;
+    }
+
+    closeNukeModal();
+    toast('正在清除雲端所有資料，請勿關閉應用程式...', '');
+    
+    try {
+        const txColRef = db.collection('users').doc(user.uid).collection('transactions');
+        
+        // 1. 拉取所有資料的 ID
+        const snap = await txColRef.get();
+        if (snap.empty) {
+            toast('雲端無資料可清除', 'info');
+            return;
+        }
+
+        // 2. 批次刪除所有交易
+        const promises = snap.docs.map(doc => txColRef.doc(doc.id).delete());
+        await Promise.all(promises);
+
+        // 3. 刪除快取檔
+        await db.collection('users').doc(user.uid).collection('meta').doc('stats').delete();
+
+        // 4. 清除本地快取
+        localStorage.removeItem(`globalStats_${user.uid}`);
+        globalStats = { totalW: 0, totalC: 0, monthly: {}, initialMonth: '' };
+
+        if (!isLimitBypassed()) incrementActionCount('nuke');
+        
+        // 5. 重新初始化畫面
+        initMonthSelector();
+        refreshDash();
+        goScreen('home');
+        alert('✅ 清除完畢！\n您的雲端與本機資料已全數歸零。');
+        
+    } catch(err) {
+        console.error(err);
+        alert('清除過程發生錯誤：\n' + err.message);
+    }
+}
+
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.11\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.12\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
