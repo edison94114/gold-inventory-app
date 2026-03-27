@@ -119,21 +119,24 @@
     .sec-more { font-size: 13px; color: var(--gold); cursor: pointer; }
     
     /* Transaction Card */
-    .tx-item { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 11px 13px; display: flex; align-items: center; gap: 11px; margin-bottom: 10px; cursor: pointer; transition: background 0.15s; -webkit-tap-highlight-color: transparent; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .tx-item { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 11px 13px; display: flex; align-items: center; gap: 11px; margin-bottom: 10px; cursor: pointer; transition: background 0.15s; -webkit-tap-highlight-color: transparent; box-shadow: 0 2px 8px rgba(0,0,0,0.15); max-width: 100%; overflow: hidden; box-sizing: border-box; }
     .tx-item:active { background: var(--bg3); }
     .tx-dot { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; background: var(--bg3); }
     .tx-info { flex: 1; min-width: 0; }
     .tx-type { font-size: 15px; font-weight: bold; color: var(--text); }
     .tx-meta { font-size: 12px; color: var(--text3); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .tx-right { text-align: right; flex-shrink: 0; }
-    .tx-wt { font-size: 15px; font-weight: bold; }
+    
+    /* ★ v1.13 修正：為右側數值與備註加上最大寬度與省略號防呆 */
+    .tx-right { text-align: right; flex-shrink: 0; max-width: 45%; min-width: 0; }
+    .tx-wt { font-size: 15px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .tx-wt.in { color: var(--green); }
     .tx-wt.out { color: var(--red); }
-    .tx-amt { font-size: 13px; margin-top: 3px; }
+    .tx-amt { font-size: 13px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .tx-amt.in { color: var(--green); }
     .tx-amt.out { color: var(--red); }
-    .tx-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
-    .tx-actions { margin-left: 4px; padding-left: 6px; border-left: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; align-items: center; }
+    .tx-sub { font-size: 11px; color: var(--text3); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+    
+    .tx-actions { margin-left: 4px; padding-left: 6px; border-left: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; align-items: center; flex-shrink: 0; }
     .btn-action { background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 4px; opacity: 0.8; transition: opacity 0.2s; }
     .btn-action:active { opacity: 0.4; }
 
@@ -574,7 +577,7 @@
 
         <div class="menu-item" onclick="forceUpdateApp()">
           <div class="mi-left"><div class="mi-icon" style="background:#0d1a2b; color:#4ea8de;">🚀</div><div class="mi-label" style="color:#4ea8de;">檢查並強制更新系統</div></div>
-          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.12</div>
+          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.13</div>
         </div>
 
         <div class="menu-item" onclick="prepareExport()">
@@ -593,7 +596,7 @@
           <div class="mi-arrow">›</div>
         </div>
 
-        <div class="menu-item" onclick="promptNukeDatabase()" style="border-color: rgba(255,69,58,0.5); margin-top: 24px; background: rgba(255,69,58,0.05);">
+        <div class="menu-item admin-only" id="btn-delete-all" onclick="promptNukeDatabase()" style="border-color: rgba(255,69,58,0.5); margin-top: 24px; background: rgba(255,69,58,0.05); display:none;">
           <div class="mi-left"><div class="mi-icon" style="background:var(--red-bg); color:var(--red);">⚠️</div><div class="mi-label" style="color:var(--red); font-weight:bold;">清除所有線上資料 (慎用)</div></div>
           <div class="mi-arrow" style="color:var(--red);">›</div>
         </div>
@@ -673,7 +676,7 @@
 
 <script>
 // ★ 系統版本變數
-const APP_VERSION = 'v1.12';
+const APP_VERSION = 'v1.13';
 
 // ★ 版本控制機制：清除舊版快取
 const urlParams = new URLSearchParams(window.location.search);
@@ -739,9 +742,11 @@ function isLimitBypassed() {
 // ★ 管理 UI 權限限制顯示
 function applyAdminUI() {
     if (isLimitBypassed()) {
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
         document.getElementById('export-limit-txt').textContent = '管理員無限制';
         document.getElementById('import-limit-txt').textContent = '管理員無限制';
     } else {
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
         document.getElementById('export-limit-txt').textContent = '每日限 2 次';
         document.getElementById('import-limit-txt').textContent = '每日限 2 次';
     }
@@ -779,7 +784,7 @@ function checkActionLimit(actionType, maxLimit, requestAmount = 1) {
   if (isLimitBypassed()) return true;
   const currentCount = getActionCount(actionType);
   if (currentCount + requestAmount > maxLimit) {
-      alert(`⚠️ 操作受限\n為了保護資料庫，每日限制 ${actionType === 'add' ? '新增' : (actionType === 'delete' ? '刪除' : '操作')} 最多 ${maxLimit} 筆/次。\n您今日剩餘額度不足，請於明日再試。`);
+      alert(`⚠️ 操作受限\n為了保護資料庫，每日限制 ${actionType === 'add' ? '新增' : (actionType === 'delete' ? '刪除' : '操作')} 最多 ${maxLimit} 筆。\n您今日剩餘額度不足，請於明日再試。`);
       return false;
   }
   return true;
@@ -1692,209 +1697,21 @@ function calcValue() {
   document.getElementById('cv-total').textContent = 'NT$ ' + total.toLocaleString();
 }
 
-// 關閉 Modal 的函數
-function closeExportModal() {
-    document.getElementById('export-modal').style.display = 'none';
+// 關閉 Nuke Modal
+function closeNukeModal() {
+    document.getElementById('nuke-modal').style.display = 'none';
 }
 
-function prepareExport() {
-    if (!navigator.onLine) {
-        alert('⚠️ 離線狀態下無法執行完整匯出備份，請恢復網路連線後再試。');
-        return;
-    }
-    if (!checkActionLimit('export', 2)) return;
-    
-    // 顯示下載教學 Modal
-    document.getElementById('export-modal').style.display = 'flex';
-}
-
-async function executeExport() {
-  closeExportModal();
-  toast('正在擷取完整資料，請稍後...', 'info');
-  try {
-      const snap = await txCol().orderBy('timestamp', 'asc').get();
-      if (snap.empty) { toast('尚無資料可匯出', 'error'); return; }
-      
-      const sorted = snap.docs.map(d => d.data());
-      const h = ['交易序號', '交易日期', '交易類別', '出庫/入庫(台錢)', '出庫重量(台錢)', '入庫重量(台錢)', '總庫存(台錢)', '出庫金額', '入庫金額', '總結餘', '參考牌價', '交易對象', '備註', '狀態'];
-      
-      let runW = 0, runC = 0;
-      const rows = sorted.map((tx, index) => {
-        const dateStr = tx.date ? new Date(tx.date).toLocaleString('zh-TW', {hour12: false}) : '';
-        const inW = tx.wDir === '入庫' ? (tx.mace || 0) : 0;
-        const outW = tx.wDir === '出庫' ? (tx.mace || 0) : 0;
-        const inC = tx.cDir === '收入' ? (tx.amount || 0) : 0;
-        const outC = tx.cDir === '支出' ? (tx.amount || 0) : 0;
-        
-        let statusText = tx.isEdited ? '修改' : (tx.isBackdated ? '補登' : '正常');
-    
-        runW += inW - outW;
-        runC += inC - outC;
-    
-        return [ index + 1, dateStr, tx.type || '', tx.wDir || '', outW || '', inW || '', runW.toFixed(3), outC || '', inC || '', runC, tx.price || '', tx.target || '', tx.note || '', statusText ];
-      });
-      
-      const ws = XLSX.utils.aoa_to_sheet([h, ...rows]);
-      ws['!cols'] = [{ wch: 10 }, { wch: 22 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 15 }, { wch: 25 }, { wch: 10 }];
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "庫存紀錄");
-      
-      XLSX.writeFile(wb, '貴金屬庫存紀錄_'+new Date().toISOString().slice(0,10)+'.xlsx');
-      localStorage.setItem('lastBackupDate', Date.now());
-      checkBackupReminder();
-      if (!isLimitBypassed()) incrementActionCount('export');
-      
-      setTimeout(() => {
-          alert('✅ 匯出程序已執行！\n\n請自行至手機的「檔案」或「下載」資料夾中確認檔案是否存在。');
-      }, 500);
-      
-  } catch(e) {
-      toast('匯出失敗：' + e.message, 'error');
-  }
-}
-
-function checkImportLimit() {
-  if (!navigator.onLine) {
-      alert('⚠️ 離線狀態下無法執行還原紀錄，請恢復網路連線後再試。');
-      return;
-  }
-  if (!checkActionLimit('import', 2)) return;
-  document.getElementById('import-file').click();
-}
-
-async function doImport(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  
-  const bypass = isLimitBypassed();
-  const count = getActionCount('import');
-  const remainText = bypass ? '不限次數' : `${2 - count} 次`;
-  const msg = `警告：此操作會將檔案內的紀錄「新增」至您目前的帳號中。\n\n🔥【強烈建議】：在還原前請先至帳號頁面「清除所有紀錄」，以免資料重複疊加！\n\n(今日尚可執行次數：${remainText})\n請問確定要繼續匯入嗎？`;
-  
-  if (!confirm(msg)) {
-    event.target.value = '';
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    try {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-      const firstSheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[firstSheetName];
-      const json = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
-      
-      if (json.length < 2) {
-        alert('匯入失敗：檔案中沒有發現資料列！');
-        return;
-      }
-
-      toast('開始讀取並匯入，請稍候...', '');
-      
-      let importedCount = 0;
-      const promises = [];
-      
-      for (let i = 1; i < json.length; i++) {
-        const row = json[i];
-        if (!row || row.length === 0) continue;
-
-        let dateVal = row[1];
-        const type = row[2];
-        if(!dateVal || !type || type === '交易類別') continue; 
-        
-        let txDate;
-        if (dateVal instanceof Date) {
-          txDate = dateVal;
-        } else if (typeof dateVal === 'number') {
-          txDate = new Date(Math.round((dateVal - 25569) * 86400 * 1000));
-        } else {
-          txDate = new Date(String(dateVal).replace(/-/g, '/').replace('T', ' ')); 
-        }
-
-        if (isNaN(txDate.getTime())) continue;
-
-        const outW = parseFloat(row[4]) || 0;
-        const inW = parseFloat(row[5]) || 0;
-        const mace = inW > 0 ? inW : outW;
-        const wDir = inW > 0 ? '入庫' : (outW > 0 ? '出庫' : '');
-        
-        const outC = parseInt(row[7]) || 0;
-        const inC = parseInt(row[8]) || 0;
-        const amount = inC > 0 ? inC : outC;
-        const cDir = inC > 0 ? '收入' : (outC > 0 ? '支出' : '');
-
-        const statusText = row[13] || '';
-        const isEdited = String(statusText).includes('修改');
-        const isBackdated = String(statusText).includes('補登');
-
-        const txData = {
-          timestamp: firebase.firestore.Timestamp.fromDate(txDate), 
-          date: txDate.toISOString(),
-          isBackdated: isBackdated,
-          isEdited: isEdited,
-          type: String(type).trim(),
-          wDir: wDir,
-          mace: mace,
-          gram: +(mace * 3.75).toFixed(3),
-          tael: +(mace / 10).toFixed(4),
-          oz: +(mace / 8.294).toFixed(4),
-          cDir: cDir,
-          amount: amount,
-          price: parseInt(row[10]) || 0,
-          target: String(row[11] || '').trim(),
-          note: String(row[12] || '').trim()
-        };
-        
-        promises.push(txCol().add(txData));
-        importedCount++;
-      }
-      
-      if (importedCount === 0) {
-        alert('匯入失敗：檔案中沒有發現可辨識的交易紀錄。');
-        return;
-      }
-
-      await Promise.all(promises);
-      if (!isLimitBypassed()) incrementActionCount('import');
-      autoHealStats(); 
-      alert(`匯入完成！成功還原 ${importedCount} 筆紀錄。`);
-      
-      const selector = document.getElementById('month-selector');
-      if (selector) selector.value = 'recent';
-      loadHistoryMonth();
-      goScreen('home'); 
-      
-    } catch(err) {
-      console.error(err);
-      alert('檔案解析發生例外錯誤：\n' + err.message);
-    }
-    
-    event.target.value = ''; 
-  };
-  
-  reader.onerror = () => {
-    alert('無法讀取檔案，請檢查檔案權限或稍後再試！');
-  };
-  
-  reader.readAsArrayBuffer(file);
-}
-
-// ★ 終極大絕招：一鍵清除線上資料庫
 function promptNukeDatabase() {
     if (!navigator.onLine) {
         alert('⚠️ 離線狀態下無法執行清除資料庫，請恢復網路連線後再試。');
         return;
     }
     
-    if (!checkActionLimit('nuke', 1)) return; // 每日限制 1 次
+    if (!checkActionLimit('nuke', 1)) return; 
 
     document.getElementById('nuke-verify-input').value = '';
     document.getElementById('nuke-modal').style.display = 'flex';
-}
-
-function closeNukeModal() {
-    document.getElementById('nuke-modal').style.display = 'none';
 }
 
 async function executeNukeDatabase() {
@@ -1910,27 +1727,22 @@ async function executeNukeDatabase() {
     try {
         const txColRef = db.collection('users').doc(user.uid).collection('transactions');
         
-        // 1. 拉取所有資料的 ID
         const snap = await txColRef.get();
         if (snap.empty) {
             toast('雲端無資料可清除', 'info');
             return;
         }
 
-        // 2. 批次刪除所有交易
         const promises = snap.docs.map(doc => txColRef.doc(doc.id).delete());
         await Promise.all(promises);
 
-        // 3. 刪除快取檔
         await db.collection('users').doc(user.uid).collection('meta').doc('stats').delete();
 
-        // 4. 清除本地快取
         localStorage.removeItem(`globalStats_${user.uid}`);
         globalStats = { totalW: 0, totalC: 0, monthly: {}, initialMonth: '' };
 
         if (!isLimitBypassed()) incrementActionCount('nuke');
         
-        // 5. 重新初始化畫面
         initMonthSelector();
         refreshDash();
         goScreen('home');
@@ -1943,7 +1755,7 @@ async function executeNukeDatabase() {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.12\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.13\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
