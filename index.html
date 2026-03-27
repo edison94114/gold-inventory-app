@@ -568,6 +568,12 @@
           <div class="mi-left"><div class="mi-icon" style="background:#1a0f00;">📊</div><div class="mi-label">歷史日結報表</div></div>
           <div class="mi-arrow">›</div>
         </div>
+
+        <div class="menu-item" onclick="forceUpdateApp()">
+          <div class="mi-left"><div class="mi-icon" style="background:#0d1a2b; color:#4ea8de;">🚀</div><div class="mi-label" style="color:#4ea8de;">檢查並強制更新系統</div></div>
+          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.11</div>
+        </div>
+
         <div class="menu-item" onclick="prepareExport()">
           <div class="mi-left"><div class="mi-icon" style="background:#1a1800;">📥</div><div class="mi-label">匯出備份（原生 Excel 檔）<br><span style="font-size:12px; color:var(--text3); font-weight:normal;" id="export-limit-txt">每日限 2 次</span></div></div>
           <div class="mi-arrow">›</div>
@@ -580,7 +586,7 @@
         </div>
 
         <div class="menu-item" onclick="showAbout()">
-          <div class="mi-left"><div class="mi-icon" style="background:#0d1a2b;">ℹ️</div><div class="mi-label">關於此應用程式</div></div>
+          <div class="mi-left"><div class="mi-icon" style="background:#2a2a2e;">ℹ️</div><div class="mi-label">關於此應用程式</div></div>
           <div class="mi-arrow">›</div>
         </div>
 
@@ -642,6 +648,9 @@
 <div id="toast"></div>
 
 <script>
+// ★ 系統版本變數
+const APP_VERSION = 'v1.11';
+
 // ★ 版本控制機制：清除舊版快取
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get('v')) {
@@ -651,7 +660,9 @@ if (urlParams.get('v')) {
             for (let name of names) caches.delete(name);
         });
     }
+    // 清理網址並通知使用者
     window.history.replaceState(null, null, currentUrl);
+    window.onload = () => { setTimeout(() => toast('系統已強制更新至最新版！', 'success'), 800); };
 }
 
 // Firebase config
@@ -665,7 +676,7 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 
-// ★ 啟用 Firestore 離線支援 (Offline Persistence)
+// 啟用 Firestore 離線支援
 firebase.firestore().enablePersistence()
   .catch(function(err) {
       if (err.code == 'failed-precondition') {
@@ -680,9 +691,9 @@ const db = firebase.firestore();
 
 // State & Cache
 let user = null;
-let allTx = []; // 僅供匯出備份使用
-let recentTx = []; // 首頁專用：最新 30 筆快取
-let historyTx = []; // 歷史專用：依據所選區間抓取的資料
+let allTx = []; 
+let recentTx = []; 
+let historyTx = []; 
 let curFilter = '全部';
 let fState = { type: '一般進貨', wDir: '入庫', cDir: '支出', sync: false };
 let unsubRecent = null;
@@ -693,7 +704,6 @@ let lastScreen = 'home';
 let isBatchDeleteMode = false;
 let batchSelectedIds = new Set();
 
-// ★ 獨立統計快取變數
 let globalStats = { totalW: 0, totalC: 0, monthly: {}, initialMonth: '' };
 let renderLimit = 20;
 
@@ -711,6 +721,16 @@ function applyAdminUI() {
         document.getElementById('export-limit-txt').textContent = '每日限 2 次';
         document.getElementById('import-limit-txt').textContent = '每日限 2 次';
     }
+}
+
+// ★ 強制更新按鈕功能
+function forceUpdateApp() {
+    toast('正在為您請求最新系統檔...', 'info');
+    setTimeout(() => {
+        // 利用當下的 timestamp 生成絕對不重複的網址，強迫瀏覽器重新拉取 Vercel 檔案
+        const newUrl = window.location.origin + window.location.pathname + '?v=' + new Date().getTime();
+        window.location.href = newUrl;
+    }, 1000);
 }
 
 // 限制次數管理邏輯
@@ -748,7 +768,7 @@ function initMonthSelector() {
   const nowMonth = new Date().toISOString().slice(0, 7); 
   
   let months = new Set(Object.keys(globalStats.monthly || {}));
-  months.add(nowMonth); // 強制加入本月選項
+  months.add(nowMonth); 
   
   const sortedMonths = Array.from(months).sort().reverse();
   
@@ -823,10 +843,13 @@ auth.onAuthStateChanged(u => {
     document.getElementById('p-name').textContent = u.displayName || '用戶';
     document.getElementById('p-email').textContent = u.email || '-';
     
+    // 將上方定義的版本號寫入 UI
+    document.getElementById('version-display').textContent = APP_VERSION;
+    
     const alertVal = localStorage.getItem(`alert_${user.uid}`);
     document.getElementById('alert-level-text').innerHTML = alertVal ? `${alertVal} 錢 ›` : '未設定 ›';
 
-    applyAdminUI(); // 套用特權 UI 設定
+    applyAdminUI(); 
 
     const cachedStats = localStorage.getItem(`globalStats_${user.uid}`);
     if (cachedStats) {
@@ -915,7 +938,7 @@ async function doLogout() { await auth.signOut(); toast('已登出'); }
 const SCREENS = ['home','history','add','converter','profile', 'daily', 'detail'];
 function goScreen(name) {
   if (isBatchDeleteMode && name !== 'history') {
-      toggleBatchDelete(); // 離開歷史頁面時關閉批次刪除模式
+      toggleBatchDelete(); 
   }
 
   SCREENS.forEach(s => document.getElementById('screen-'+s)?.classList.toggle('active', s===name));
@@ -975,7 +998,6 @@ function setStockAlert() {
 
 function txCol() { return db.collection('users').doc(user.uid).collection('transactions'); }
 
-// ★ 啟動雙軌監聽與快取機制
 function subTx() {
   if (unsubStats) unsubStats();
   if (unsubRecent) unsubRecent();
@@ -1221,7 +1243,6 @@ async function deleteTx(id) {
   }
 }
 
-// ★ 批次刪除邏輯
 function toggleBatchDelete() {
     isBatchDeleteMode = !isBatchDeleteMode;
     batchSelectedIds.clear();
@@ -1836,7 +1857,7 @@ async function doImport(event) {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.10\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.11\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
