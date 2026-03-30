@@ -126,7 +126,6 @@
     .tx-type { font-size: 15px; font-weight: bold; color: var(--text); }
     .tx-meta { font-size: 12px; color: var(--text3); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     
-    /* ★ v1.13 修正：為右側數值與備註加上最大寬度與省略號防呆 */
     .tx-right { text-align: right; flex-shrink: 0; max-width: 45%; min-width: 0; }
     .tx-wt { font-size: 15px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .tx-wt.in { color: var(--green); }
@@ -140,7 +139,7 @@
     .btn-action { background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 4px; opacity: 0.8; transition: opacity 0.2s; }
     .btn-action:active { opacity: 0.4; }
 
-    /* 批次刪除核取方塊 */
+    /* Batch Delete */
     .batch-checkbox { width: 20px; height: 20px; accent-color: var(--red); margin-left: 8px; cursor: pointer; }
     .batch-delete-bar { position: sticky; bottom: 0; left: 0; width: 100%; background: var(--bg2); padding: 12px; border-top: 1px solid var(--border); display: none; align-items: center; justify-content: space-between; box-shadow: 0 -4px 12px rgba(0,0,0,0.3); z-index: 5; }
     
@@ -152,15 +151,22 @@
     .empty-text { font-size: 16px; color: var(--text2); }
     .empty-sub { font-size: 14px; color: var(--text3); margin-top: 6px; }
 
-    /* History */
+    /* History & Filter */
     .history-scroll { overflow-y: auto; flex: 1; padding: 14px; position: relative; -webkit-overflow-scrolling: touch; }
     .history-controls { display: flex; gap: 8px; margin-bottom: 12px; }
     .month-selector { flex: 1; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--gold-light); font-size: 15px; font-weight: bold; outline: none; font-family: inherit; -webkit-appearance: none; cursor: pointer; text-align: center; }
     .btn-initial { flex: 0 0 auto; background: #1a1200; border: 0.5px solid var(--gold); border-radius: 10px; padding: 12px 16px; color: var(--gold); font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; }
 
-    .search-bar { margin-bottom: 12px; }
+    .search-bar { margin-bottom: 12px; display: flex; gap: 8px; }
     .search-input { width: 100%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 14px 12px 38px; color: var(--text); font-size: 15px; outline: none; background-image: url('data:image/svg+xml;utf8,<svg fill="%23a0a0a5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'); background-repeat: no-repeat; background-position: 10px center; background-size: 20px; transition: border-color 0.2s; }
     .search-input:focus { border-color: var(--gold); }
+
+    /* ★ 全域快搜 UI 樣式 */
+    #gs-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 2000; flex-direction: column; display: none; }
+    .gs-header { background: var(--bg); padding: calc(var(--sat) + 10px) 16px 10px; display: flex; align-items: center; gap: 10px; border-bottom: 0.5px solid var(--border); }
+    .gs-list-wrap { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
+    #single-record-banner { display: none; background: linear-gradient(135deg, #c9a84c, #e8c96a); color: #1a1200; font-weight: bold; text-align: center; border-radius: 12px; padding: 12px; margin-bottom: 12px; cursor: pointer; box-shadow: 0 4px 12px rgba(201,168,76,0.3); transition: opacity 0.2s; }
+    #single-record-banner:active { opacity: 0.7; }
 
     .filter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .btn-batch { font-size: 13px; color: var(--red); background: var(--red-bg); border: 0.5px solid rgba(255,69,58,0.3); border-radius: 6px; padding: 4px 8px; cursor: pointer; font-weight: bold; }
@@ -347,6 +353,15 @@
     </div>
   </div>
 
+  <div id="gs-overlay">
+    <div class="gs-header">
+       <input type="text" id="gs-input" class="search-input" style="flex:1;" placeholder="全域搜尋 (重量/金額/對象/備註)..." oninput="doGlobalSearch()">
+       <button style="background: transparent; color: var(--gold); border: none; font-size: 15px; font-weight:bold; cursor:pointer;" onclick="closeGlobalSearch()">✖ 取消</button>
+    </div>
+    <div style="padding: 10px 14px; color: var(--text3); font-size: 13px; border-bottom: 0.5px solid var(--border);" id="gs-info">請輸入關鍵字進行全域快搜 (不耗費讀取次數)</div>
+    <div class="gs-list-wrap" id="gs-list"></div>
+  </div>
+
   <div id="main-app" style="display:none;">
 
     <div id="screen-home" class="screen active">
@@ -409,6 +424,10 @@
         <div style="width:35px;"></div>
       </div>
       <div class="history-scroll">
+        
+        <div id="single-record-banner" onclick="exitSingleRecordMode()">
+            🔙 返回搜尋結果 (找到 0 筆)
+        </div>
 
         <div class="filter-header">
           <div class="history-controls" style="margin-bottom:0; flex:1;">
@@ -420,8 +439,9 @@
           <button class="btn-batch" id="btn-toggle-batch" onclick="toggleBatchDelete()" style="margin-left:8px;">🗑️ 批次刪除</button>
         </div>
 
-        <div class="search-bar" style="margin-top: 12px;">
-          <input type="text" class="search-input" id="search-input" placeholder="在當前區間內搜尋關鍵字..." oninput="onSearchInput()">
+        <div class="search-bar">
+          <input type="text" class="search-input" id="search-input" placeholder="在當前區間內搜尋..." oninput="onSearchInput()" style="flex:1;">
+          <button style="background: var(--gold); color: #1a1200; border: none; border-radius: 10px; padding: 0 14px; font-weight: bold; cursor: pointer; white-space: nowrap;" onclick="openGlobalSearch()">🌐 全域快搜</button>
         </div>
 
         <div class="filter-bar" id="filter-bar">
@@ -577,7 +597,7 @@
 
         <div class="menu-item" onclick="forceUpdateApp()">
           <div class="mi-left"><div class="mi-icon" style="background:#0d1a2b; color:#4ea8de;">🚀</div><div class="mi-label" style="color:#4ea8de;">檢查並強制更新系統</div></div>
-          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.13</div>
+          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.14</div>
         </div>
 
         <div class="menu-item" onclick="prepareExport()">
@@ -675,8 +695,8 @@
 <div id="toast"></div>
 
 <script>
-// ★ 系統版本變數
-const APP_VERSION = 'v1.13';
+// ★ 系統版本變數 (觸發快取更新)
+const APP_VERSION = 'v1.14';
 
 // ★ 版本控制機制：清除舊版快取
 const urlParams = new URLSearchParams(window.location.search);
@@ -687,7 +707,6 @@ if (urlParams.get('v')) {
             for (let name of names) caches.delete(name);
         });
     }
-    // 清理網址並通知使用者
     window.history.replaceState(null, null, currentUrl);
     window.onload = () => { setTimeout(() => toast('系統已強制更新至最新版！', 'success'), 800); };
 }
@@ -703,14 +722,10 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 
-// 啟用 Firestore 離線支援
 firebase.firestore().enablePersistence()
   .catch(function(err) {
-      if (err.code == 'failed-precondition') {
-          console.warn("多個分頁開啟，離線模式只能在單一分頁啟用");
-      } else if (err.code == 'unimplemented') {
-          console.warn("瀏覽器不支援離線模式");
-      }
+      if (err.code == 'failed-precondition') console.warn("多個分頁開啟，離線模式只能在單一分頁啟用");
+      else if (err.code == 'unimplemented') console.warn("瀏覽器不支援離線模式");
   });
 
 const auth = firebase.auth();
@@ -730,16 +745,14 @@ let editingTxId = null;
 let lastScreen = 'home'; 
 let isBatchDeleteMode = false;
 let batchSelectedIds = new Set();
-
 let globalStats = { totalW: 0, totalC: 0, monthly: {}, initialMonth: '' };
 let renderLimit = 20;
+let lastGlobalSearchCount = 0; // 記錄搜尋總數供返回按鈕顯示
 
-// ★ 特權管理員驗證
 function isLimitBypassed() {
     return user && user.email === 'edison94114@gmail.com';
 }
 
-// ★ 管理 UI 權限限制顯示
 function applyAdminUI() {
     if (isLimitBypassed()) {
         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
@@ -752,17 +765,14 @@ function applyAdminUI() {
     }
 }
 
-// ★ 強制更新按鈕功能
 function forceUpdateApp() {
     toast('正在為您請求最新系統檔...', 'info');
     setTimeout(() => {
-        // 利用當下的 timestamp 生成絕對不重複的網址，強迫瀏覽器重新拉取 Vercel 檔案
         const newUrl = window.location.origin + window.location.pathname + '?v=' + new Date().getTime();
         window.location.href = newUrl;
     }, 1000);
 }
 
-// 限制次數管理邏輯
 function getActionCount(actionType) {
   const today = new Date().toISOString().slice(0,10);
   const stored = localStorage.getItem(`action_${actionType}`);
@@ -779,7 +789,6 @@ function incrementActionCount(actionType, amount = 1) {
   localStorage.setItem(`action_${actionType}`, JSON.stringify({ date: today, count: count + amount }));
 }
 
-// 檢查操作限制
 function checkActionLimit(actionType, maxLimit, requestAmount = 1) {
   if (isLimitBypassed()) return true;
   const currentCount = getActionCount(actionType);
@@ -790,7 +799,6 @@ function checkActionLimit(actionType, maxLimit, requestAmount = 1) {
   return true;
 }
 
-// 產生時間選單
 function initMonthSelector() {
   const selector = document.getElementById('month-selector');
   const currentVal = selector.value || 'recent';
@@ -819,7 +827,39 @@ function initMonthSelector() {
   }
 }
 
-// 自動修復引擎 (背景執行)
+// ★ 更新或創建專屬的快取搜尋引擎
+function updateSearchIndex(id, txData, isDelete) {
+    if (!user) return;
+    let indexStr = localStorage.getItem(`searchIndex_${user.uid}`);
+    let index = indexStr ? JSON.parse(indexStr) : [];
+
+    index = index.filter(item => item.id !== id);
+
+    if (!isDelete && txData) {
+        index.push({
+           id: id,
+           date: txData.date,
+           type: txData.type,
+           wDir: txData.wDir,
+           cDir: txData.cDir,
+           mace: txData.mace,
+           amount: txData.amount,
+           target: txData.target || '',
+           note: txData.note || ''
+        });
+        index.sort((a,b) => new Date(b.date) - new Date(a.date));
+    }
+
+    localStorage.setItem(`searchIndex_${user.uid}`, JSON.stringify(index));
+
+    if (navigator.onLine) {
+        setTimeout(() => {
+            db.collection('users').doc(user.uid).collection('meta').doc('searchIndex').set({items: index}).catch(e => console.warn(e));
+        }, 500); // 微幅延遲讓出主線程
+    }
+}
+
+// ★ 修改：全域統計自動修復時一併建立搜尋索引
 async function autoHealStats() {
     if (!user) return;
     try {
@@ -827,7 +867,8 @@ async function autoHealStats() {
         let totalW = 0, totalC = 0;
         let monthly = {};
         let initialMonth = null;
-        
+        let newSearchIndex = []; // ★
+
         snap.forEach(doc => {
             const data = doc.data();
             if (!data.date) return;
@@ -845,23 +886,163 @@ async function autoHealStats() {
             if (data.type === '期初設定') {
                 if (!initialMonth || d < initialMonth) initialMonth = d;
             }
+
+            // ★ 同步組裝搜尋索引
+            newSearchIndex.push({
+               id: doc.id,
+               date: data.date,
+               type: data.type,
+               wDir: data.wDir,
+               cDir: data.cDir,
+               mace: data.mace,
+               amount: data.amount,
+               target: data.target || '',
+               note: data.note || ''
+            });
         });
 
         globalStats = { totalW, totalC, monthly, initialMonth: initialMonth || '' };
         localStorage.setItem(`globalStats_${user.uid}`, JSON.stringify(globalStats));
+        
+        // ★ 儲存搜尋索引
+        newSearchIndex.sort((a,b) => new Date(b.date) - new Date(a.date));
+        localStorage.setItem(`searchIndex_${user.uid}`, JSON.stringify(newSearchIndex));
         
         initMonthSelector();
         refreshDash();
 
         if (navigator.onLine) {
             await db.collection('users').doc(user.uid).collection('meta').doc('stats').set(globalStats);
+            await db.collection('users').doc(user.uid).collection('meta').doc('searchIndex').set({items: newSearchIndex});
         }
     } catch(e) {
         console.warn("自動修復快取失敗:", e);
     }
 }
 
-// Auth listener
+// ★ 全域搜尋介面開關與運作
+async function openGlobalSearch() {
+    document.getElementById('gs-overlay').style.display = 'flex';
+    document.getElementById('gs-input').focus();
+    document.getElementById('gs-list').innerHTML = '';
+    document.getElementById('gs-info').textContent = '載入快取資料中...';
+
+    // 檢查本地是否已經有快取索引
+    let indexStr = localStorage.getItem(`searchIndex_${user.uid}`);
+    if (!indexStr && navigator.onLine) {
+        try {
+            const doc = await db.collection('users').doc(user.uid).collection('meta').doc('searchIndex').get();
+            if (doc.exists) {
+                localStorage.setItem(`searchIndex_${user.uid}`, JSON.stringify(doc.data().items || []));
+            } else {
+                await autoHealStats(); // 沒有檔案就自動建檔
+            }
+        } catch(e) { console.warn(e); }
+    }
+    document.getElementById('gs-info').textContent = '準備就緒，請輸入關鍵字進行快搜';
+}
+
+function closeGlobalSearch() {
+    document.getElementById('gs-overlay').style.display = 'none';
+    document.getElementById('gs-input').value = '';
+}
+
+function doGlobalSearch() {
+    const kw = document.getElementById('gs-input').value.toLowerCase().trim();
+    const listEl = document.getElementById('gs-list');
+    if (!kw) {
+        listEl.innerHTML = '';
+        document.getElementById('gs-info').textContent = '請輸入關鍵字進行快搜...';
+        return;
+    }
+
+    const indexStr = localStorage.getItem(`searchIndex_${user.uid}`);
+    const index = indexStr ? JSON.parse(indexStr) : [];
+
+    const results = index.filter(t => 
+        (t.target && t.target.toLowerCase().includes(kw)) ||
+        (t.note && t.note.toLowerCase().includes(kw)) ||
+        (t.mace && t.mace.toString().includes(kw)) ||
+        (t.amount && t.amount.toString().includes(kw)) ||
+        (t.type && t.type.toLowerCase().includes(kw))
+    );
+
+    lastGlobalSearchCount = results.length;
+    document.getElementById('gs-info').textContent = `找到 ${results.length} 筆符合的紀錄 (輕量快取)`;
+
+    listEl.innerHTML = results.map(tx => {
+        const isIn = tx.wDir==='入庫';
+        let wStr = tx.mace > 0 ? ((isIn?'+':'-') + tx.mace + ' 錢') : '';
+        let cStr = tx.amount > 0 ? ((tx.cDir==='收入'?'+':'-') + 'NT$' + tx.amount) : '';
+        const meta = [tx.date ? tx.date.slice(0,10) : '', tx.target].filter(Boolean).join(' · ');
+
+        return `<div class="tx-item" onclick="fetchAndLockSingleRecord('${tx.id}', '${tx.date}')" style="border-color: rgba(201,168,76,0.5);">
+                  <div class="tx-info"><div class="tx-type">${tx.type}</div><div class="tx-meta">${meta||'無備註'}</div></div>
+                  <div class="tx-right">
+                    ${wStr ? `<div class="tx-wt ${isIn?'in':'out'}">${wStr}</div>` : ''}
+                    ${cStr ? `<div class="tx-amt ${tx.cDir==='收入'?'in':'out'}">${cStr}</div>` : ''}
+                    ${tx.note ? `<div class="tx-sub">${tx.note}</div>` : ''}
+                  </div>
+                </div>`;
+    }).join('');
+}
+
+// ★ 點擊全域搜尋結果，發動唯一一筆完整讀取
+async function fetchAndLockSingleRecord(id, dateStr) {
+    closeGlobalSearch();
+    goScreen('history'); // 跳至紀錄列表
+
+    // 顯示鎖定返回橫幅
+    const banner = document.getElementById('single-record-banner');
+    banner.style.display = 'block';
+    banner.textContent = `🔙 返回搜尋結果 (找到 ${lastGlobalSearchCount} 筆)`;
+
+    // 暫時解除原有的月份即時監聽 (防呆)
+    if (unsubHistory) { unsubHistory(); unsubHistory = null; }
+
+    // 下拉選單自動切換至該月，但不觸發下載整月資料
+    if (dateStr) {
+        const month = dateStr.slice(0, 7);
+        const selector = document.getElementById('month-selector');
+        if ([...selector.options].some(o => o.value === month)) {
+            selector.value = month;
+        } else {
+            selector.value = 'recent';
+        }
+    }
+
+    document.getElementById('history-list').innerHTML = '<div class="empty-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
+
+    try {
+        toast('正在向雲端請求完整資料...', 'info');
+        // 先偷看近期 30 筆記憶體有沒有這筆，沒有才向雲端拉 1 筆
+        let localDoc = recentTx.find(t => t.id === id);
+        if (localDoc) {
+            historyTx = [localDoc];
+        } else {
+            const doc = await db.collection('users').doc(user.uid).collection('transactions').doc(id).get();
+            if (doc.exists) {
+                historyTx = [{id: doc.id, ...doc.data()}];
+            } else {
+                throw new Error('資料已不存在');
+            }
+        }
+        renderLimit = 20;
+        renderHistory();  // 只會渲染出這一筆
+        showDetail(id);   // 自動彈出明細視窗
+    } catch(e) {
+        toast('讀取失敗: ' + e.message, 'error');
+        exitSingleRecordMode();
+    }
+}
+
+// 退出鎖定模式
+function exitSingleRecordMode() {
+    document.getElementById('single-record-banner').style.display = 'none';
+    document.getElementById('gs-overlay').style.display = 'flex'; // 打開搜尋
+    loadHistoryMonth(); // 讓底層恢復原本月份的即時監聽
+}
+
 auth.onAuthStateChanged(u => {
   document.getElementById('loading').style.display = 'none';
   if (u) {
@@ -905,7 +1086,6 @@ auth.onAuthStateChanged(u => {
   }
 });
 
-// 監聽網路狀態變更
 window.addEventListener('online', () => {
     if (user) {
         setTimeout(() => {
@@ -915,9 +1095,7 @@ window.addEventListener('online', () => {
 });
 
 window.addEventListener('offline', () => {
-    if (user) {
-        toast('📶 目前無網路連線，已切換至離線模式', 'error');
-    }
+    if (user) toast('📶 目前無網路連線，已切換至離線模式', 'error');
 });
 
 function switchAuthTab(tab) {
@@ -965,9 +1143,7 @@ async function doLogout() { await auth.signOut(); toast('已登出'); }
 
 const SCREENS = ['home','history','add','converter','profile', 'daily', 'detail'];
 function goScreen(name) {
-  if (isBatchDeleteMode && name !== 'history') {
-      toggleBatchDelete(); 
-  }
+  if (isBatchDeleteMode && name !== 'history') { toggleBatchDelete(); }
 
   SCREENS.forEach(s => document.getElementById('screen-'+s)?.classList.toggle('active', s===name));
   if (name === 'home' || name === 'history') { lastScreen = name; }
@@ -985,9 +1161,7 @@ function goScreen(name) {
     if(el) el.classList.add('active');
   }
 
-  if (name==='history') {
-    renderHistory();
-  }
+  if (name==='history') renderHistory();
   if (name==='add' && !editingTxId) clearForm(); 
   if (name==='daily') renderDailySummary(); 
 }
@@ -1026,7 +1200,6 @@ function setStockAlert() {
 
 function txCol() { return db.collection('users').doc(user.uid).collection('transactions'); }
 
-// ★ 啟動雙軌監聽與快取機制
 function subTx() {
   if (unsubStats) unsubStats();
   if (unsubRecent) unsubRecent();
@@ -1068,6 +1241,9 @@ function subTx() {
 function loadHistoryMonth() {
     if (unsubHistory) { unsubHistory(); unsubHistory = null; }
     
+    // 取消鎖定模式橫幅
+    document.getElementById('single-record-banner').style.display = 'none';
+
     const mode = document.getElementById('month-selector').value;
     
     if (mode === 'recent') {
@@ -1121,7 +1297,6 @@ function checkBackupReminder() {
   }
 }
 
-// 快取增量引擎
 async function updateStatsCache(txData, oldTxData = null, isDelete = false) {
     if (!user) return;
     const statsRef = db.collection('users').doc(user.uid).collection('meta').doc('stats');
@@ -1181,7 +1356,7 @@ async function updateStatsCache(txData, oldTxData = null, isDelete = false) {
             if (navigator.onLine) {
                 await statsRef.update(updates);
             } else {
-                statsRef.update(updates); // 離線時直接背景發送，不等待
+                statsRef.update(updates); 
             }
         }
     } catch(e) {
@@ -1226,17 +1401,27 @@ async function doSubmit() {
   try {
     const txColRef = db.collection('users').doc(user.uid).collection('transactions');
     let writePromise;
+    let docId = editingTxId; // ★
 
     if (editingTxId) {
       let oldData = historyTx.find(t => t.id === editingTxId) || recentTx.find(t => t.id === editingTxId);
       if (!oldData && navigator.onLine) { const doc = await txColRef.doc(editingTxId).get(); oldData = doc.data(); }
       writePromise = txColRef.doc(editingTxId).update(txData);
       updateStatsCache(txData, oldData, false);
+      
+      // 如果是在鎖定模式下編輯，讓前端畫面也立即吃到修改
+      if (document.getElementById('single-record-banner').style.display === 'block') {
+          historyTx = [{id: editingTxId, ...txData}];
+      }
     } else {
-      writePromise = txColRef.add(txData);
+      const newDocRef = txColRef.doc(); // ★ 先產生 ID 
+      docId = newDocRef.id;
+      writePromise = newDocRef.set(txData);
       updateStatsCache(txData, null, false);
       if (!isLimitBypassed()) incrementActionCount('add');
     }
+
+    updateSearchIndex(docId, txData, false); // ★ 同步更新搜尋索引
 
     if (!navigator.onLine) {
         alert('📶 離線模式啟動：\n您的操作已暫存於手機，畫面已更新。當網路恢復時，系統將自動同步至雲端。');
@@ -1259,7 +1444,14 @@ async function deleteTx(id) {
     
     const delPromise = txCol().doc(id).delete();
     updateStatsCache(txData, null, true);
+    updateSearchIndex(id, null, true); // ★ 清除搜尋快取
     if (!isLimitBypassed()) incrementActionCount('delete');
+
+    // ★ 如果處於單筆鎖定視窗，刪除後清空畫面
+    if (document.getElementById('single-record-banner').style.display === 'block') {
+        document.getElementById('history-list').innerHTML = '<div class="empty-state"><div class="empty-icon">🗑️</div><div class="empty-text">該筆紀錄已刪除</div></div>';
+        historyTx = [];
+    }
 
     if (!navigator.onLine) {
         alert('📶 離線模式啟動：\n刪除動作已暫存於本機，畫面已更新。將於連線後同步至雲端。');
@@ -1697,7 +1889,6 @@ function calcValue() {
   document.getElementById('cv-total').textContent = 'NT$ ' + total.toLocaleString();
 }
 
-// 關閉 Nuke Modal
 function closeNukeModal() {
     document.getElementById('nuke-modal').style.display = 'none';
 }
@@ -1737,8 +1928,10 @@ async function executeNukeDatabase() {
         await Promise.all(promises);
 
         await db.collection('users').doc(user.uid).collection('meta').doc('stats').delete();
+        await db.collection('users').doc(user.uid).collection('meta').doc('searchIndex').delete(); // ★ 同步清除雲端快取檔
 
         localStorage.removeItem(`globalStats_${user.uid}`);
+        localStorage.removeItem(`searchIndex_${user.uid}`); // ★ 刪除本地快取
         globalStats = { totalW: 0, totalC: 0, monthly: {}, initialMonth: '' };
 
         if (!isLimitBypassed()) incrementActionCount('nuke');
@@ -1755,7 +1948,7 @@ async function executeNukeDatabase() {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.13\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.14 (導入索引快取引擎)\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
