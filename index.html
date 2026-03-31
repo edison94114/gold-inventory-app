@@ -98,10 +98,12 @@
     /* Dashboard & Cards */
     .dash-scroll { overflow-y: auto; flex: 1; padding: 14px 14px 0; -webkit-overflow-scrolling: touch; }
     .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-    .stat-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 14px; padding: 14px 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .stat-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 14px; padding: 14px 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); position: relative; }
     .stat-card.gold-card { border-color: rgba(201,168,76,0.5); background: linear-gradient(145deg, #1f1a00, var(--bg2)); }
     .stat-card.green-card { border-color: rgba(50,215,75,0.4); background: linear-gradient(145deg, #0a2416, var(--bg2)); }
-    .stat-label { font-size: 13px; color: var(--text2); margin-bottom: 7px; font-weight: 500; }
+    .stat-label { font-size: 13px; color: var(--text2); margin-bottom: 7px; font-weight: 500; display: flex; align-items: center; justify-content: space-between; }
+    .eye-icon { cursor: pointer; font-size: 16px; opacity: 0.7; transition: opacity 0.2s; user-select: none; }
+    .eye-icon:active { opacity: 1; }
     .stat-val { font-size: 24px; font-weight: bold; color: var(--gold-light); line-height: 1.1; word-break: break-all; }
     .stat-val.gv { color: var(--green); font-size: 22px; }
     .stat-unit { font-size: 12px; color: var(--text3); margin-top: 5px; }
@@ -251,6 +253,19 @@
     .detail-val.in { color: var(--green); }
     .detail-val.out { color: var(--red); }
 
+    /* VIP Inventory View */
+    .vip-scroll { overflow-y: auto; flex: 1; padding: 14px; -webkit-overflow-scrolling: touch; }
+    .vip-top-bar { background: var(--bg2); border: 0.5px solid var(--gold); border-radius: 12px; padding: 14px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(201,168,76,0.15); }
+    .vip-price-input { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 10px; color: var(--gold-light); font-size: 16px; font-weight:bold; text-align: center; margin-bottom: 8px; outline: none; }
+    .vip-price-input:focus { border-color: var(--gold); }
+    .vip-total-val { font-size: 22px; font-weight: bold; color: var(--green); text-align: center; }
+    .vip-sort-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+    .btn-sort { flex: 1; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 8px; padding: 10px; color: var(--text2); font-size: 14px; cursor: pointer; text-align: center; transition: all 0.2s; }
+    .btn-sort.active { background: #1c1600; border-color: var(--gold); color: var(--gold-light); font-weight: bold; }
+    
+    .vip-list { display: flex; flex-direction: column; gap: 10px; }
+    .vip-group-header { font-size: 14px; color: var(--gold); font-weight: bold; border-bottom: 0.5px solid var(--border); padding-bottom: 4px; margin-top: 10px; margin-bottom: 4px; }
+
     /* Backup Reminder Banner */
     .backup-banner { display: none; background: rgba(229,107,78,0.15); border: 1px solid rgba(229,107,78,0.4); color: var(--text); padding: 12px 14px; border-radius: 12px; margin-bottom: 14px; align-items: center; justify-content: space-between; }
     .backup-banner-text { font-size: 13px; line-height: 1.4; color: var(--text2); }
@@ -391,13 +406,19 @@
 
         <div class="stat-grid">
           <div class="stat-card gold-card">
-            <div class="stat-label">總庫存重量 (台錢)</div>
-            <div class="stat-val" id="s-weight">0.000</div>
-            <div class="stat-unit" id="s-weight-sub">約 0.0000 兩 │ 0.000 g</div>
+            <div class="stat-label">
+                <span>總庫存重量 (台錢)</span>
+                <span class="eye-icon" onclick="toggleVisibility('weight', this)">👁️</span>
+            </div>
+            <div class="stat-val" id="s-weight" data-val="0.000">0.000</div>
+            <div class="stat-unit" id="s-weight-sub" data-val="約 0.0000 兩 │ 0.000 g">約 0.0000 兩 │ 0.000 g</div>
           </div>
           <div class="stat-card green-card">
-            <div class="stat-label">總結餘金額</div>
-            <div class="stat-val gv" id="s-balance">NT$0</div>
+            <div class="stat-label">
+                <span>總結餘金額</span>
+                <span class="eye-icon" onclick="toggleVisibility('balance', this)">👁️</span>
+            </div>
+            <div class="stat-val gv" id="s-balance" data-val="NT$0">NT$0</div>
             <div class="stat-unit">&nbsp;</div>
           </div>
         </div>
@@ -573,6 +594,7 @@
       </div>
     </div>
 
+
     <div id="screen-profile" class="screen">
       <div class="app-header">
         <span class="header-title">帳號設定</span>
@@ -585,6 +607,11 @@
           <div class="profile-email" id="p-email">-</div>
         </div>
         
+        <div class="menu-item" id="btn-vip-inventory" onclick="checkVipAccess()">
+          <div class="mi-left"><div class="mi-icon" style="background:linear-gradient(135deg, #c9a84c, #e8c96a); color:#1a1200;">👑</div><div class="mi-label" style="color:var(--gold-light);">各品項彙整 (VIP限定)</div></div>
+          <div class="mi-arrow" style="color:var(--gold-light);">›</div>
+        </div>
+
         <div class="menu-item" onclick="setStockAlert()">
           <div class="mi-left"><div class="mi-icon" style="background:#2a2a0d; color:var(--gold);">🔔</div><div class="mi-label">庫存預警設定</div></div>
           <div class="mi-arrow" style="font-size: 14px;" id="alert-level-text">未設定 ›</div>
@@ -597,7 +624,7 @@
 
         <div class="menu-item" onclick="forceUpdateApp()">
           <div class="mi-left"><div class="mi-icon" style="background:#0d1a2b; color:#4ea8de;">🚀</div><div class="mi-label" style="color:#4ea8de;">檢查並強制更新系統</div></div>
-          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.14</div>
+          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.15</div>
         </div>
 
         <div class="menu-item" onclick="prepareExport()">
@@ -632,6 +659,30 @@
         <div style="width:60px;"></div>
       </div>
       <div class="daily-scroll" id="daily-list">
+      </div>
+    </div>
+
+    <div id="screen-vip-inventory" class="screen">
+      <div class="app-header">
+        <button class="btn-back" onclick="goScreen('profile')">‹ 返回</button>
+        <span class="header-title" style="color: var(--gold-light);">各品項彙整</span>
+        <div style="width:60px;"></div>
+      </div>
+      <div class="vip-scroll">
+        <div class="vip-top-bar">
+          <div style="font-size:13px; color:var(--text2); text-align:center; margin-bottom:5px;">請輸入每錢市價計算總市值</div>
+          <input type="number" id="vip-market-price" class="vip-price-input" placeholder="例如: 9500" oninput="calcVipTotal()">
+          <div class="vip-total-val" id="vip-total-value">NT$ 0</div>
+          <div style="font-size:12px; color:var(--text3); text-align:center; margin-top:4px;">(自動乘上所有快取計算之總庫存重)</div>
+        </div>
+
+        <div class="vip-sort-bar">
+          <div class="btn-sort active" id="sort-btn-target" onclick="renderVipInventory('target')">依交易對象排序</div>
+          <div class="btn-sort" id="sort-btn-weight" onclick="renderVipInventory('weight')">依重量排序</div>
+        </div>
+
+        <div class="vip-list" id="vip-inventory-list">
+            </div>
       </div>
     </div>
 
@@ -693,12 +744,12 @@
   </div>
 </div>
 <div id="toast"></div>
-
 <script>
-// ★ 系統版本變數 (觸發快取更新)
-const APP_VERSION = 'v1.14';
+// ★ UI 顯示版本號 (隨意更改不影響資料)
+const APP_VERSION = 'v1.16';
+// ★ 快取結構版本號 (若與本機不同，強制重建快取)
+const CACHE_SCHEMA_VERSION = 'v2'; 
 
-// ★ 版本控制機制：清除舊版快取
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get('v')) {
     const currentUrl = window.location.href.split('?')[0];
@@ -733,7 +784,6 @@ const db = firebase.firestore();
 
 // State & Cache
 let user = null;
-let allTx = []; 
 let recentTx = []; 
 let historyTx = []; 
 let curFilter = '全部';
@@ -745,9 +795,13 @@ let editingTxId = null;
 let lastScreen = 'home'; 
 let isBatchDeleteMode = false;
 let batchSelectedIds = new Set();
-let globalStats = { totalW: 0, totalC: 0, monthly: {}, initialMonth: '' };
+let globalStats = { totalW: 0, totalC: 0, monthly: {}, initialMonth: '', last_updated: 0 };
 let renderLimit = 20;
-let lastGlobalSearchCount = 0; // 記錄搜尋總數供返回按鈕顯示
+let lastGlobalSearchCount = 0; 
+let isWeightHidden = false;
+let isBalanceHidden = false;
+
+const CACHE_CHUNK_SIZE = 2500; 
 
 function isLimitBypassed() {
     return user && user.email === 'edison94114@gmail.com';
@@ -758,6 +812,7 @@ function applyAdminUI() {
         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
         document.getElementById('export-limit-txt').textContent = '管理員無限制';
         document.getElementById('import-limit-txt').textContent = '管理員無限制';
+        document.getElementById('btn-vip-inventory').style.display = 'flex';
     } else {
         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
         document.getElementById('export-limit-txt').textContent = '每日限 2 次';
@@ -827,16 +882,26 @@ function initMonthSelector() {
   }
 }
 
-// ★ 更新或創建專屬的快取搜尋引擎
+function getAllCachedIndices() {
+    let allData = [];
+    for (let i = 0; i < 3; i++) {
+        let key = `searchIndex_${user.uid}${i === 0 ? '' : '_' + i}`;
+        let indexStr = localStorage.getItem(key);
+        if (indexStr) {
+            allData = allData.concat(JSON.parse(indexStr));
+        }
+    }
+    return allData;
+}
+
 function updateSearchIndex(id, txData, isDelete) {
     if (!user) return;
-    let indexStr = localStorage.getItem(`searchIndex_${user.uid}`);
-    let index = indexStr ? JSON.parse(indexStr) : [];
-
-    index = index.filter(item => item.id !== id);
+    
+    let allItems = getAllCachedIndices();
+    allItems = allItems.filter(item => item.id !== id);
 
     if (!isDelete && txData) {
-        index.push({
+        allItems.push({
            id: id,
            date: txData.date,
            type: txData.type,
@@ -847,27 +912,44 @@ function updateSearchIndex(id, txData, isDelete) {
            target: txData.target || '',
            note: txData.note || ''
         });
-        index.sort((a,b) => new Date(b.date) - new Date(a.date));
     }
 
-    localStorage.setItem(`searchIndex_${user.uid}`, JSON.stringify(index));
+    allItems.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    for (let i = 0; i < 3; i++) {
+        let key = `searchIndex_${user.uid}${i === 0 ? '' : '_' + i}`;
+        let chunk = allItems.slice(i * CACHE_CHUNK_SIZE, (i + 1) * CACHE_CHUNK_SIZE);
+        if (chunk.length > 0) {
+            localStorage.setItem(key, JSON.stringify(chunk));
+        } else {
+            localStorage.removeItem(key); 
+        }
+    }
 
     if (navigator.onLine) {
         setTimeout(() => {
-            db.collection('users').doc(user.uid).collection('meta').doc('searchIndex').set({items: index}).catch(e => console.warn(e));
-        }, 500); // 微幅延遲讓出主線程
+             for (let i = 0; i < 3; i++) {
+                let docId = `searchIndex${i === 0 ? '' : '_' + i}`;
+                let chunk = allItems.slice(i * CACHE_CHUNK_SIZE, (i + 1) * CACHE_CHUNK_SIZE);
+                if (chunk.length > 0) {
+                     db.collection('users').doc(user.uid).collection('meta').doc(docId).set({items: chunk}).catch(e => console.warn(e));
+                }
+             }
+        }, 500); 
     }
 }
 
-// ★ 修改：全域統計自動修復時一併建立搜尋索引
+// ★ 大保養機制：完全重整全庫存與索引
 async function autoHealStats() {
     if (!user) return;
     try {
+        toast('系統升級與同步整理中，請稍候...', 'info');
         const snap = await db.collection('users').doc(user.uid).collection('transactions').get();
         let totalW = 0, totalC = 0;
         let monthly = {};
         let initialMonth = null;
-        let newSearchIndex = []; // ★
+        let newSearchIndex = []; 
+        let nowTs = Date.now();
 
         snap.forEach(doc => {
             const data = doc.data();
@@ -887,7 +969,6 @@ async function autoHealStats() {
                 if (!initialMonth || d < initialMonth) initialMonth = d;
             }
 
-            // ★ 同步組裝搜尋索引
             newSearchIndex.push({
                id: doc.id,
                date: data.date,
@@ -901,41 +982,54 @@ async function autoHealStats() {
             });
         });
 
-        globalStats = { totalW, totalC, monthly, initialMonth: initialMonth || '' };
+        globalStats = { totalW, totalC, monthly, initialMonth: initialMonth || '', last_updated: nowTs };
         localStorage.setItem(`globalStats_${user.uid}`, JSON.stringify(globalStats));
         
-        // ★ 儲存搜尋索引
         newSearchIndex.sort((a,b) => new Date(b.date) - new Date(a.date));
-        localStorage.setItem(`searchIndex_${user.uid}`, JSON.stringify(newSearchIndex));
+        
+        for (let i = 0; i < 3; i++) {
+            let key = `searchIndex_${user.uid}${i === 0 ? '' : '_' + i}`;
+            let chunk = newSearchIndex.slice(i * CACHE_CHUNK_SIZE, (i + 1) * CACHE_CHUNK_SIZE);
+            if (chunk.length > 0) localStorage.setItem(key, JSON.stringify(chunk));
+            else localStorage.removeItem(key);
+        }
+        
+        // 標記本機快取結構為最新
+        localStorage.setItem('cache_schema', CACHE_SCHEMA_VERSION);
         
         initMonthSelector();
         refreshDash();
 
         if (navigator.onLine) {
             await db.collection('users').doc(user.uid).collection('meta').doc('stats').set(globalStats);
-            await db.collection('users').doc(user.uid).collection('meta').doc('searchIndex').set({items: newSearchIndex});
+            for (let i = 0; i < 3; i++) {
+                let docId = `searchIndex${i === 0 ? '' : '_' + i}`;
+                let chunk = newSearchIndex.slice(i * CACHE_CHUNK_SIZE, (i + 1) * CACHE_CHUNK_SIZE);
+                if (chunk.length > 0) {
+                     await db.collection('users').doc(user.uid).collection('meta').doc(docId).set({items: chunk});
+                }
+             }
         }
+        toast('系統同步完成！', 'success');
     } catch(e) {
         console.warn("自動修復快取失敗:", e);
     }
 }
 
-// ★ 全域搜尋介面開關與運作
 async function openGlobalSearch() {
     document.getElementById('gs-overlay').style.display = 'flex';
     document.getElementById('gs-input').focus();
     document.getElementById('gs-list').innerHTML = '';
     document.getElementById('gs-info').textContent = '載入快取資料中...';
 
-    // 檢查本地是否已經有快取索引
     let indexStr = localStorage.getItem(`searchIndex_${user.uid}`);
     if (!indexStr && navigator.onLine) {
         try {
             const doc = await db.collection('users').doc(user.uid).collection('meta').doc('searchIndex').get();
             if (doc.exists) {
-                localStorage.setItem(`searchIndex_${user.uid}`, JSON.stringify(doc.data().items || []));
+                 await autoHealStats();
             } else {
-                await autoHealStats(); // 沒有檔案就自動建檔
+                await autoHealStats(); 
             }
         } catch(e) { console.warn(e); }
     }
@@ -956,8 +1050,7 @@ function doGlobalSearch() {
         return;
     }
 
-    const indexStr = localStorage.getItem(`searchIndex_${user.uid}`);
-    const index = indexStr ? JSON.parse(indexStr) : [];
+    const index = getAllCachedIndices(); 
 
     const results = index.filter(t => 
         (t.target && t.target.toLowerCase().includes(kw)) ||
@@ -987,20 +1080,16 @@ function doGlobalSearch() {
     }).join('');
 }
 
-// ★ 點擊全域搜尋結果，發動唯一一筆完整讀取
 async function fetchAndLockSingleRecord(id, dateStr) {
     closeGlobalSearch();
-    goScreen('history'); // 跳至紀錄列表
+    goScreen('history'); 
 
-    // 顯示鎖定返回橫幅
     const banner = document.getElementById('single-record-banner');
     banner.style.display = 'block';
     banner.textContent = `🔙 返回搜尋結果 (找到 ${lastGlobalSearchCount} 筆)`;
 
-    // 暫時解除原有的月份即時監聽 (防呆)
     if (unsubHistory) { unsubHistory(); unsubHistory = null; }
 
-    // 下拉選單自動切換至該月，但不觸發下載整月資料
     if (dateStr) {
         const month = dateStr.slice(0, 7);
         const selector = document.getElementById('month-selector');
@@ -1015,7 +1104,6 @@ async function fetchAndLockSingleRecord(id, dateStr) {
 
     try {
         toast('正在向雲端請求完整資料...', 'info');
-        // 先偷看近期 30 筆記憶體有沒有這筆，沒有才向雲端拉 1 筆
         let localDoc = recentTx.find(t => t.id === id);
         if (localDoc) {
             historyTx = [localDoc];
@@ -1028,20 +1116,164 @@ async function fetchAndLockSingleRecord(id, dateStr) {
             }
         }
         renderLimit = 20;
-        renderHistory();  // 只會渲染出這一筆
-        showDetail(id);   // 自動彈出明細視窗
+        renderHistory();  
+        showDetail(id);   
     } catch(e) {
         toast('讀取失敗: ' + e.message, 'error');
         exitSingleRecordMode();
     }
 }
 
-// 退出鎖定模式
 function exitSingleRecordMode() {
     document.getElementById('single-record-banner').style.display = 'none';
-    document.getElementById('gs-overlay').style.display = 'flex'; // 打開搜尋
-    loadHistoryMonth(); // 讓底層恢復原本月份的即時監聽
+    if(lastGlobalSearchCount > 0) document.getElementById('gs-overlay').style.display = 'flex'; 
+    loadHistoryMonth(); 
 }
+
+function toggleVisibility(type, iconEl) {
+    if (type === 'weight') {
+        isWeightHidden = !isWeightHidden;
+        const el = document.getElementById('s-weight');
+        const subEl = document.getElementById('s-weight-sub');
+        if (isWeightHidden) {
+            el.textContent = '******';
+            subEl.textContent = '******';
+            iconEl.style.opacity = '1';
+        } else {
+            el.innerHTML = el.getAttribute('data-val'); 
+            subEl.textContent = subEl.getAttribute('data-val');
+            iconEl.style.opacity = '0.7';
+        }
+    } else if (type === 'balance') {
+        isBalanceHidden = !isBalanceHidden;
+        const el = document.getElementById('s-balance');
+        if (isBalanceHidden) {
+            el.textContent = '******';
+            iconEl.style.opacity = '1';
+        } else {
+            el.textContent = el.getAttribute('data-val');
+            iconEl.style.opacity = '0.7';
+        }
+    }
+}
+
+function checkVipAccess() {
+    if (isLimitBypassed()) {
+        openVipInventory();
+        return;
+    }
+
+    const isVip = localStorage.getItem(`vip_${user.uid}`);
+    if (isVip === 'true') {
+        openVipInventory();
+    } else {
+        const code = prompt('請輸入 VIP 開通代碼：');
+        if (code === 'ED-PRO-INVENTORY') {
+            localStorage.setItem(`vip_${user.uid}`, 'true');
+            alert('🎉 恭喜！VIP 功能已永久開通。');
+            openVipInventory();
+        } else if (code !== null) {
+            alert('❌ 代碼錯誤');
+        }
+    }
+}
+
+let vipSortMode = 'target'; 
+
+function openVipInventory() {
+    goScreen('vip-inventory');
+    
+    const savedPrice = localStorage.getItem(`vip_price_${user.uid}`);
+    if (savedPrice) {
+        document.getElementById('vip-market-price').value = savedPrice;
+    }
+    
+    renderVipInventory(vipSortMode);
+}
+
+function renderVipInventory(mode) {
+    vipSortMode = mode;
+    document.getElementById('sort-btn-target').classList.toggle('active', mode === 'target');
+    document.getElementById('sort-btn-weight').classList.toggle('active', mode === 'weight');
+    
+    const listEl = document.getElementById('vip-inventory-list');
+    listEl.innerHTML = '<div class="loading-dots" style="margin:20px auto;"><span></span><span></span><span></span></div>';
+
+    setTimeout(() => {
+        const index = getAllCachedIndices();
+        let html = '';
+
+        if (index.length === 0) {
+            listEl.innerHTML = '<div class="empty-state"><div class="empty-text">尚無快取資料可供彙整</div></div>';
+            return;
+        }
+
+        if (mode === 'target') {
+            const groups = {};
+            index.forEach(tx => {
+                const tgt = tx.target || '未指定對象';
+                if (!groups[tgt]) groups[tgt] = [];
+                groups[tgt].push(tx);
+            });
+
+            const sortedTargets = Object.keys(groups).sort();
+            
+            sortedTargets.forEach(tgt => {
+                let tgtW = 0;
+                let tgtC = 0;
+                groups[tgt].forEach(tx => {
+                    tgtW += (tx.wDir === '入庫' ? 1 : -1) * (tx.mace || 0);
+                    tgtC += (tx.cDir === '收入' ? 1 : -1) * (tx.amount || 0);
+                });
+                
+                html += `<div class="vip-group-header">${tgt} <span style="font-size:12px; font-weight:normal; color:var(--text3);">(淨重: ${tgtW.toFixed(3)} 錢)</span></div>`;
+                
+                groups[tgt].sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(tx => {
+                    html += buildVipTxCard(tx);
+                });
+            });
+
+        } else if (mode === 'weight') {
+            const sortedByW = [...index].sort((a, b) => (b.mace || 0) - (a.mace || 0));
+            sortedByW.forEach(tx => {
+                html += buildVipTxCard(tx);
+            });
+        }
+
+        listEl.innerHTML = html;
+        calcVipTotal(); 
+    }, 100); 
+}
+
+function buildVipTxCard(tx) {
+    const isIn = tx.wDir==='入庫';
+    let wStr = tx.mace > 0 ? ((isIn?'+':'-') + tx.mace + ' 錢') : '';
+    let cStr = tx.amount > 0 ? ((tx.cDir==='收入'?'+':'-') + 'NT$' + tx.amount) : '';
+    const meta = [tx.date ? tx.date.slice(0,10) : '', tx.target].filter(Boolean).join(' · ');
+
+    return `<div class="tx-item" onclick="fetchAndLockSingleRecord('${tx.id}', '${tx.date}')" style="padding: 8px 12px;">
+              <div class="tx-info"><div class="tx-type" style="font-size:14px;">${tx.type}</div><div class="tx-meta" style="font-size:11px;">${meta||'無備註'}</div></div>
+              <div class="tx-right">
+                ${wStr ? `<div class="tx-wt ${isIn?'in':'out'}" style="font-size:14px;">${wStr}</div>` : ''}
+                ${cStr ? `<div class="tx-amt ${tx.cDir==='收入'?'in':'out'}" style="font-size:12px;">${cStr}</div>` : ''}
+              </div>
+            </div>`;
+}
+
+function calcVipTotal() {
+    const priceStr = document.getElementById('vip-market-price').value;
+    const price = parseFloat(priceStr) || 0;
+    
+    if (priceStr !== '') {
+        localStorage.setItem(`vip_price_${user.uid}`, priceStr);
+    }
+    
+    const totW = globalStats.totalW || 0;
+    const totalVal = Math.round(totW * price);
+    
+    document.getElementById('vip-total-value').textContent = 'NT$ ' + totalVal.toLocaleString();
+}
+
 
 auth.onAuthStateChanged(u => {
   document.getElementById('loading').style.display = 'none';
@@ -1060,13 +1292,52 @@ auth.onAuthStateChanged(u => {
 
     applyAdminUI(); 
 
-    const cachedStats = localStorage.getItem(`globalStats_${user.uid}`);
-    if (cachedStats) {
-        try {
-            globalStats = JSON.parse(cachedStats);
-            initMonthSelector();
-            refreshDash();
-        } catch(e){}
+    // ★ 版本控制與多裝置同步機制 (利用時間戳記與 Schema Version)
+    const localSchema = localStorage.getItem('cache_schema');
+    
+    if (localSchema !== CACHE_SCHEMA_VERSION) {
+        // 如果連 Schema (快取結構) 都不一樣，直接強制作大保養
+        autoHealStats(); 
+    } else {
+        // Schema 一致，嘗試比較本地時間戳記與雲端時間戳記
+        const cachedStats = localStorage.getItem(`globalStats_${user.uid}`);
+        if (cachedStats) {
+            try {
+                globalStats = JSON.parse(cachedStats);
+                const localTs = globalStats.last_updated || 0;
+                
+                if (navigator.onLine) {
+                    // 只讀取雲端的一個 meta 檔案，極低成本
+                    db.collection('users').doc(user.uid).collection('meta').doc('stats').get().then(doc => {
+                        if (doc.exists) {
+                            const cloudData = doc.data();
+                            const cloudTs = cloudData.last_updated || 0;
+                            if (cloudTs > localTs) {
+                                // 雲端比較新 (其他裝置寫入過)，觸發重建本地快取
+                                toast('發現其他裝置的新資料，同步中...', 'info');
+                                autoHealStats();
+                            } else {
+                                // 本機最新，直接載入畫面
+                                initMonthSelector();
+                                refreshDash();
+                            }
+                        } else {
+                             autoHealStats();
+                        }
+                    }).catch(() => {
+                        initMonthSelector();
+                        refreshDash();
+                    });
+                } else {
+                    initMonthSelector();
+                    refreshDash();
+                }
+            } catch(e){
+                autoHealStats();
+            }
+        } else {
+            autoHealStats();
+        }
     }
 
     document.getElementById('auth-screen').style.display = 'none';
@@ -1141,7 +1412,7 @@ async function doGoogleLogin() {
 
 async function doLogout() { await auth.signOut(); toast('已登出'); }
 
-const SCREENS = ['home','history','add','converter','profile', 'daily', 'detail'];
+const SCREENS = ['home','history','add','converter','profile', 'daily', 'detail', 'vip-inventory'];
 function goScreen(name) {
   if (isBatchDeleteMode && name !== 'history') { toggleBatchDelete(); }
 
@@ -1154,7 +1425,7 @@ function goScreen(name) {
   });
 
   let activeNav = name;
-  if (name === 'daily') activeNav = 'profile';
+  if (name === 'daily' || name === 'vip-inventory') activeNav = 'profile';
   if (name === 'detail') activeNav = lastScreen === 'home' ? 'home' : 'history';
   if (activeNav !== 'add') {
     const el = document.getElementById('nb-'+activeNav);
@@ -1241,7 +1512,6 @@ function subTx() {
 function loadHistoryMonth() {
     if (unsubHistory) { unsubHistory(); unsubHistory = null; }
     
-    // 取消鎖定模式橫幅
     document.getElementById('single-record-banner').style.display = 'none';
 
     const mode = document.getElementById('month-selector').value;
@@ -1338,6 +1608,10 @@ async function updateStatsCache(txData, oldTxData = null, isDelete = false) {
 
     globalStats.totalW += (diffW - oldDiffW);
     globalStats.totalC += (diffC - oldDiffC);
+    let nowTs = Date.now();
+    globalStats.last_updated = nowTs;
+    updates['last_updated'] = nowTs;
+
     if (!globalStats.monthly[month]) globalStats.monthly[month] = { netW: 0, netC: 0 };
     globalStats.monthly[month].netW += (diffW - (month === oldMonth ? oldDiffW : 0));
     if (oldMonth && month !== oldMonth && globalStats.monthly[oldMonth]) {
@@ -1401,7 +1675,7 @@ async function doSubmit() {
   try {
     const txColRef = db.collection('users').doc(user.uid).collection('transactions');
     let writePromise;
-    let docId = editingTxId; // ★
+    let docId = editingTxId; 
 
     if (editingTxId) {
       let oldData = historyTx.find(t => t.id === editingTxId) || recentTx.find(t => t.id === editingTxId);
@@ -1409,19 +1683,18 @@ async function doSubmit() {
       writePromise = txColRef.doc(editingTxId).update(txData);
       updateStatsCache(txData, oldData, false);
       
-      // 如果是在鎖定模式下編輯，讓前端畫面也立即吃到修改
       if (document.getElementById('single-record-banner').style.display === 'block') {
           historyTx = [{id: editingTxId, ...txData}];
       }
     } else {
-      const newDocRef = txColRef.doc(); // ★ 先產生 ID 
+      const newDocRef = txColRef.doc(); 
       docId = newDocRef.id;
       writePromise = newDocRef.set(txData);
       updateStatsCache(txData, null, false);
       if (!isLimitBypassed()) incrementActionCount('add');
     }
 
-    updateSearchIndex(docId, txData, false); // ★ 同步更新搜尋索引
+    updateSearchIndex(docId, txData, false);
 
     if (!navigator.onLine) {
         alert('📶 離線模式啟動：\n您的操作已暫存於手機，畫面已更新。當網路恢復時，系統將自動同步至雲端。');
@@ -1444,10 +1717,9 @@ async function deleteTx(id) {
     
     const delPromise = txCol().doc(id).delete();
     updateStatsCache(txData, null, true);
-    updateSearchIndex(id, null, true); // ★ 清除搜尋快取
+    updateSearchIndex(id, null, true); 
     if (!isLimitBypassed()) incrementActionCount('delete');
 
-    // ★ 如果處於單筆鎖定視窗，刪除後清空畫面
     if (document.getElementById('single-record-banner').style.display === 'block') {
         document.getElementById('history-list').innerHTML = '<div class="empty-state"><div class="empty-icon">🗑️</div><div class="empty-text">該筆紀錄已刪除</div></div>';
         historyTx = [];
@@ -1572,7 +1844,6 @@ function showDetail(id) {
   if(!tx) return;
   
   const isIn = tx.wDir === '入庫';
-  const isOut = tx.wDir === '出庫';
   let wStr = tx.mace > 0 ? ((isIn?'+':'-') + tx.mace.toFixed(3) + ' 錢') : '-';
   let wCls = tx.mace > 0 ? (isIn?'in':'out') : '';
   
@@ -1588,7 +1859,7 @@ function showDetail(id) {
   const html = `
     <div class="detail-row"><div class="detail-label">交易日期</div><div class="detail-val">${dateStr}</div></div>
     <div class="detail-row"><div class="detail-label">交易類別</div><div class="detail-val" style="color:var(--gold);">${tx.type}</div></div>
-    <div class="detail-row"><div class="detail-label">重量異動</div><div class="detail-val ${wCls}">${wStr}</div></div>
+    <div class="detail-row"><div class="detail-label">重量異提</div><div class="detail-val ${wCls}">${wStr}</div></div>
     <div class="detail-row"><div class="detail-label">收付金額</div><div class="detail-val ${cCls}">${cStr}</div></div>
     <div class="detail-row"><div class="detail-label">參考牌價</div><div class="detail-val">${tx.price ? 'NT$ '+tx.price : '-'}</div></div>
     <div class="detail-row"><div class="detail-label">交易對象</div><div class="detail-val">${tx.target || '-'}</div></div>
@@ -1605,17 +1876,26 @@ function refreshDash() {
 
   const sWeightEl = document.getElementById('s-weight');
   const alertLvlStr = localStorage.getItem(`alert_${user?.uid}`);
+  let displayWStr = totW.toFixed(3);
+  
   if (alertLvlStr !== null && totW < parseFloat(alertLvlStr)) {
     sWeightEl.style.color = 'var(--red)';
-    sWeightEl.innerHTML = `${totW.toFixed(3)} <span style="font-size:14px">⚠️過低</span>`;
+    displayWStr = `${totW.toFixed(3)} <span style="font-size:14px">⚠️過低</span>`;
   } else {
     sWeightEl.style.color = 'var(--gold-light)';
-    sWeightEl.textContent = totW.toFixed(3);
   }
-
-  document.getElementById('s-weight-sub').textContent = `約 ${(totW/10).toFixed(4)} 兩 │ ${(totW*3.75).toFixed(3)} g`;
-  document.getElementById('s-balance').textContent = 'NT$' + totC.toLocaleString();
   
+  sWeightEl.setAttribute('data-val', displayWStr);
+  if(!isWeightHidden) sWeightEl.innerHTML = displayWStr;
+
+  const subWStr = `約 ${(totW/10).toFixed(4)} 兩 │ ${(totW*3.75).toFixed(3)} g`;
+  document.getElementById('s-weight-sub').setAttribute('data-val', subWStr);
+  if(!isWeightHidden) document.getElementById('s-weight-sub').textContent = subWStr;
+
+  const balanceStr = 'NT$' + totC.toLocaleString();
+  document.getElementById('s-balance').setAttribute('data-val', balanceStr);
+  if(!isBalanceHidden) document.getElementById('s-balance').textContent = balanceStr;
+
   const today = new Date().toISOString().slice(0,10);
   let tiw=0,tow=0,tic=0,toc=0;
   recentTx.forEach(tx => {
@@ -1928,11 +2208,17 @@ async function executeNukeDatabase() {
         await Promise.all(promises);
 
         await db.collection('users').doc(user.uid).collection('meta').doc('stats').delete();
-        await db.collection('users').doc(user.uid).collection('meta').doc('searchIndex').delete(); // ★ 同步清除雲端快取檔
+        for (let i=0; i<3; i++) {
+           let docId = `searchIndex${i === 0 ? '' : '_' + i}`;
+           await db.collection('users').doc(user.uid).collection('meta').doc(docId).delete().catch(()=>{});
+        }
 
         localStorage.removeItem(`globalStats_${user.uid}`);
-        localStorage.removeItem(`searchIndex_${user.uid}`); // ★ 刪除本地快取
-        globalStats = { totalW: 0, totalC: 0, monthly: {}, initialMonth: '' };
+        for (let i=0; i<3; i++) {
+            localStorage.removeItem(`searchIndex_${user.uid}${i === 0 ? '' : '_' + i}`);
+        }
+        
+        globalStats = { totalW: 0, totalC: 0, monthly: {}, initialMonth: '', last_updated: 0 };
 
         if (!isLimitBypassed()) incrementActionCount('nuke');
         
@@ -1948,7 +2234,7 @@ async function executeNukeDatabase() {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.14 (導入索引快取引擎)\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.16\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
