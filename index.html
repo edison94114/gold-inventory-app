@@ -624,7 +624,7 @@
 
         <div class="menu-item" onclick="forceUpdateApp()">
           <div class="mi-left"><div class="mi-icon" style="background:#0d1a2b; color:#4ea8de;">🚀</div><div class="mi-label" style="color:#4ea8de;">檢查並強制更新系統</div></div>
-          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.15</div>
+          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.17</div>
         </div>
 
         <div class="menu-item" onclick="prepareExport()">
@@ -746,7 +746,7 @@
 <div id="toast"></div>
 <script>
 // ★ UI 顯示版本號 (隨意更改不影響資料)
-const APP_VERSION = 'v1.16';
+const APP_VERSION = 'v1.17';
 // ★ 快取結構版本號 (若與本機不同，強制重建快取)
 const CACHE_SCHEMA_VERSION = 'v2'; 
 
@@ -1251,7 +1251,7 @@ function buildVipTxCard(tx) {
     let cStr = tx.amount > 0 ? ((tx.cDir==='收入'?'+':'-') + 'NT$' + tx.amount) : '';
     const meta = [tx.date ? tx.date.slice(0,10) : '', tx.target].filter(Boolean).join(' · ');
 
-    return `<div class="tx-item" onclick="fetchAndLockSingleRecord('${tx.id}', '${tx.date}')" style="padding: 8px 12px;">
+    return `<div class="tx-item" onclick="showDetail('${tx.id}')" style="padding: 8px 12px;">
               <div class="tx-info"><div class="tx-type" style="font-size:14px;">${tx.type}</div><div class="tx-meta" style="font-size:11px;">${meta||'無備註'}</div></div>
               <div class="tx-right">
                 ${wStr ? `<div class="tx-wt ${isIn?'in':'out'}" style="font-size:14px;">${wStr}</div>` : ''}
@@ -1417,7 +1417,9 @@ function goScreen(name) {
   if (isBatchDeleteMode && name !== 'history') { toggleBatchDelete(); }
 
   SCREENS.forEach(s => document.getElementById('screen-'+s)?.classList.toggle('active', s===name));
-  if (name === 'home' || name === 'history') { lastScreen = name; }
+  
+  // 更新 lastScreen 追蹤 (將 vip-inventory 也加入主返回記憶點)
+  if (name === 'home' || name === 'history' || name === 'vip-inventory') { lastScreen = name; }
 
   ['home','history','converter','profile'].forEach(n => {
     const el = document.getElementById('nb-'+n);
@@ -1426,7 +1428,7 @@ function goScreen(name) {
 
   let activeNav = name;
   if (name === 'daily' || name === 'vip-inventory') activeNav = 'profile';
-  if (name === 'detail') activeNav = lastScreen === 'home' ? 'home' : 'history';
+  if (name === 'detail') activeNav = (lastScreen === 'history' || lastScreen === 'vip-inventory') ? 'history' : 'home';
   if (activeNav !== 'add') {
     const el = document.getElementById('nb-'+activeNav);
     if(el) el.classList.add('active');
@@ -1678,7 +1680,7 @@ async function doSubmit() {
     let docId = editingTxId; 
 
     if (editingTxId) {
-      let oldData = historyTx.find(t => t.id === editingTxId) || recentTx.find(t => t.id === editingTxId);
+      let oldData = historyTx.find(t => t.id === editingTxId) || recentTx.find(t => t.id === editingTxId) || getAllCachedIndices().find(t => t.id === editingTxId);
       if (!oldData && navigator.onLine) { const doc = await txColRef.doc(editingTxId).get(); oldData = doc.data(); }
       writePromise = txColRef.doc(editingTxId).update(txData);
       updateStatsCache(txData, oldData, false);
@@ -1703,16 +1705,23 @@ async function doSubmit() {
         toast(editingTxId ? '紀錄修改成功！' : '交易已成功寫入！', 'success');
     }
     clearForm(); 
-    goScreen('history'); 
+    
+    // 若原本是從 VIP 模式過來，儲存後直接回到 VIP，反之回到歷史
+    if (lastScreen === 'vip-inventory') {
+        goScreen('vip-inventory');
+        renderVipInventory(vipSortMode);
+    } else {
+        goScreen('history'); 
+    }
   } catch(err) { errEl.textContent = '寫入失敗：' + err.message; }
   finally { btn.disabled = false; btn.textContent = '確認寫入紀錄'; }
 }
 
-async function deleteTx(id) {
+async function deleteTx(id, backToList = false) {
   if (!checkActionLimit('delete', 100)) return;
   if (!confirm('確定要刪除這筆紀錄嗎？\n(刪除後總庫存將自動重新計算)')) return;
   try {
-    let txData = historyTx.find(t => t.id === id) || recentTx.find(t => t.id === id);
+    let txData = historyTx.find(t => t.id === id) || recentTx.find(t => t.id === id) || getAllCachedIndices().find(t => t.id === id);
     if (!txData && navigator.onLine) { const doc = await txCol().doc(id).get(); txData = doc.data(); }
     
     const delPromise = txCol().doc(id).delete();
@@ -1731,6 +1740,9 @@ async function deleteTx(id) {
         await delPromise;
         toast('紀錄已刪除，庫存已更新！', 'success');
     }
+    
+    if (backToList) goBackToList();
+    if (lastScreen === 'vip-inventory') renderVipInventory(vipSortMode);
   } catch(err) {
     toast('刪除失敗：' + err.message, 'error');
   }
@@ -1803,7 +1815,8 @@ async function executeBatchDelete() {
 }
 
 function editTx(id) {
-  const tx = historyTx.find(t => t.id === id) || recentTx.find(t => t.id === id);
+  let tx = historyTx.find(t => t.id === id) || recentTx.find(t => t.id === id);
+  if (!tx) tx = getAllCachedIndices().find(t => t.id === id);
   if (!tx) return;
   
   editingTxId = id; 
@@ -1840,8 +1853,9 @@ function showDetail(id) {
       return;
   }
 
-  const tx = historyTx.find(t => t.id === id) || recentTx.find(t => t.id === id);
-  if(!tx) return;
+  let tx = historyTx.find(t => t.id === id) || recentTx.find(t => t.id === id);
+  if (!tx) tx = getAllCachedIndices().find(t => t.id === id);
+  if (!tx) return;
   
   const isIn = tx.wDir === '入庫';
   let wStr = tx.mace > 0 ? ((isIn?'+':'-') + tx.mace.toFixed(3) + ' 錢') : '-';
@@ -1856,16 +1870,25 @@ function showDetail(id) {
   if(tx.isEdited) statusText = '已修改';
   else if(tx.isBackdated) statusText = '補登';
 
-  const html = `
+  let html = `
     <div class="detail-row"><div class="detail-label">交易日期</div><div class="detail-val">${dateStr}</div></div>
     <div class="detail-row"><div class="detail-label">交易類別</div><div class="detail-val" style="color:var(--gold);">${tx.type}</div></div>
-    <div class="detail-row"><div class="detail-label">重量異提</div><div class="detail-val ${wCls}">${wStr}</div></div>
+    <div class="detail-row"><div class="detail-label">重量異動</div><div class="detail-val ${wCls}">${wStr}</div></div>
     <div class="detail-row"><div class="detail-label">收付金額</div><div class="detail-val ${cCls}">${cStr}</div></div>
     <div class="detail-row"><div class="detail-label">參考牌價</div><div class="detail-val">${tx.price ? 'NT$ '+tx.price : '-'}</div></div>
     <div class="detail-row"><div class="detail-label">交易對象</div><div class="detail-val">${tx.target || '-'}</div></div>
     <div class="detail-row"><div class="detail-label">備註</div><div class="detail-val">${tx.note || '-'}</div></div>
     <div class="detail-row"><div class="detail-label">資料狀態</div><div class="detail-val" style="color:${statusText==='正常'?'var(--text2)':'var(--red)'};">${statusText}</div></div>
   `;
+  
+  // ★ 在明細中加入編輯與刪除的捷徑按鈕
+  html += `
+    <div style="display:flex; gap:10px; margin-top: 16px; padding-top: 16px; border-top: 0.5px solid var(--border);">
+      <button class="btn-primary" style="flex:1; background:var(--bg3); color:var(--text); border:0.5px solid var(--border);" onclick="editTx('${tx.id}')">✏️ 編輯</button>
+      <button class="btn-primary" style="flex:1; background:var(--red-bg); color:var(--red); border:0.5px solid rgba(255,69,58,0.3);" onclick="deleteTx('${tx.id}', true)">🗑️ 刪除</button>
+    </div>
+  `;
+
   document.getElementById('detail-content').innerHTML = html;
   goScreen('detail');
 }
@@ -2040,6 +2063,14 @@ function renderDailySummary() {
   let html = '';
   dates.forEach(d => {
     const g = grouped[d];
+    let avgCostText = '';
+    
+    // ★ 計算當日平均成本
+    if (g.inW > 0 && g.outC > 0) {
+        const avg = Math.round(g.outC / g.inW);
+        avgCostText = `<div style="font-size:11px; color:var(--text3); margin-top:4px; grid-column: 1 / -1; text-align:right;">當日平均成本: <b>NT$ ${avg.toLocaleString()} / 錢</b></div>`;
+    }
+
     html += `
       <div class="daily-card">
         <div class="dc-header">
@@ -2051,6 +2082,7 @@ function renderDailySummary() {
           <div class="dc-item"><div class="dc-label">出庫重量(錢)</div><div class="dc-val out">-${g.outW.toFixed(3)}</div></div>
           <div class="dc-item"><div class="dc-label">當日收入(元)</div><div class="dc-val in">+${g.inC.toLocaleString()}</div></div>
           <div class="dc-item"><div class="dc-label">當日支出(元)</div><div class="dc-val out">-${g.outC.toLocaleString()}</div></div>
+          ${avgCostText}
         </div>
       </div>
     `;
@@ -2234,7 +2266,7 @@ async function executeNukeDatabase() {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.16\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.17\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
@@ -2243,5 +2275,3 @@ function toast(msg, type='') {
   setTimeout(()=>{ t.className=''; }, 3000);
 }
 </script>
-</body>
-</html>
