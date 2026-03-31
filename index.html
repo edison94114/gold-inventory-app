@@ -607,6 +607,11 @@
           <div class="profile-email" id="p-email">-</div>
         </div>
         
+        <div class="menu-item" onclick="promptVipCode()">
+          <div class="mi-left"><div class="mi-icon" style="background:#3a2a00; color:var(--gold);">💎</div><div class="mi-label" style="color:var(--gold-light);">VIP 狀態與開通</div></div>
+          <div class="mi-arrow" style="font-size: 14px; color:var(--gold);" id="vip-status-text">未開通 ›</div>
+        </div>
+
         <div class="menu-item" id="btn-vip-inventory" onclick="checkVipAccess()">
           <div class="mi-left"><div class="mi-icon" style="background:linear-gradient(135deg, #c9a84c, #e8c96a); color:#1a1200;">👑</div><div class="mi-label" style="color:var(--gold-light);">各品項彙整 (VIP限定)</div></div>
           <div class="mi-arrow" style="color:var(--gold-light);">›</div>
@@ -624,17 +629,17 @@
 
         <div class="menu-item" onclick="forceUpdateApp()">
           <div class="mi-left"><div class="mi-icon" style="background:#0d1a2b; color:#4ea8de;">🚀</div><div class="mi-label" style="color:#4ea8de;">檢查並強制更新系統</div></div>
-          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.17</div>
+          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.18</div>
         </div>
 
         <div class="menu-item" onclick="prepareExport()">
-          <div class="mi-left"><div class="mi-icon" style="background:#1a1800;">📥</div><div class="mi-label">匯出備份（原生 Excel 檔）<br><span style="font-size:12px; color:var(--text3); font-weight:normal;" id="export-limit-txt">每日限 2 次</span></div></div>
+          <div class="mi-left"><div class="mi-icon" style="background:#1a1800;">📥</div><div class="mi-label">匯出備份 (VIP限定)<br><span style="font-size:12px; color:var(--text3); font-weight:normal;" id="export-limit-txt">每日限 2 次</span></div></div>
           <div class="mi-arrow">›</div>
         </div>
         
         <input type="file" id="import-file" accept=".xlsx, .xls, .csv" style="display: none;" onchange="doImport(event)" />
         <div class="menu-item" onclick="checkImportLimit()">
-          <div class="mi-left"><div class="mi-icon" style="background:#2a1a0d;">📤</div><div class="mi-label">上傳還原紀錄 (Excel/CSV)<br><span style="font-size:12px; color:var(--text3); font-weight:normal;" id="import-limit-txt">每日限 2 次</span></div></div>
+          <div class="mi-left"><div class="mi-icon" style="background:#2a1a0d;">📤</div><div class="mi-label">上傳還原紀錄 (VIP限定)<br><span style="font-size:12px; color:var(--text3); font-weight:normal;" id="import-limit-txt">每日限 2 次</span></div></div>
           <div class="mi-arrow">›</div>
         </div>
 
@@ -658,7 +663,8 @@
         <span class="header-title">歷史日結報表</span>
         <div style="width:60px;"></div>
       </div>
-      <div class="daily-scroll" id="daily-list">
+      <div id="daily-vip-banner" style="background:var(--bg3); color:var(--gold); text-align:center; padding:8px; font-size:13px; font-weight:bold; border-bottom:0.5px solid var(--border);"></div>
+      <div class="daily-scroll" id="daily-list" onscroll="checkDailyScroll(this)">
       </div>
     </div>
 
@@ -698,7 +704,7 @@
             </div>
             <div style="display:flex; gap:10px;">
                 <button class="modal-btn" style="background:var(--bg3); color:var(--text);" onclick="closeExportModal()">取消</button>
-                <button class="modal-btn" onclick="executeExport()">了解，開始下載</button>
+                <button class="modal-btn" style="background:linear-gradient(135deg, #c9a84c, #e8c96a); color:#1a1200;" onclick="executeExport()">了解，開始下載</button>
             </div>
         </div>
     </div>
@@ -745,9 +751,9 @@
 </div>
 <div id="toast"></div>
 <script>
-// ★ UI 顯示版本號 (隨意更改不影響資料)
-const APP_VERSION = 'v1.17';
-// ★ 快取結構版本號 (若與本機不同，強制重建快取)
+// ★ UI 顯示版本號
+const APP_VERSION = 'v1.18';
+// ★ 快取結構版本號
 const CACHE_SCHEMA_VERSION = 'v2'; 
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -804,28 +810,72 @@ let isBalanceHidden = false;
 const CACHE_CHUNK_SIZE = 2500; 
 
 function isLimitBypassed() {
-    return user && user.email === 'edison94114@gmail.com';
+  return user && user.email === 'edison94114@gmail.com';
+}
+
+// ★ VIP 共用判定
+function isVipUser() {
+  return isLimitBypassed() || localStorage.getItem(`vip_${user.uid}`) === 'true';
 }
 
 function applyAdminUI() {
-    if (isLimitBypassed()) {
-        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
-        document.getElementById('export-limit-txt').textContent = '管理員無限制';
-        document.getElementById('import-limit-txt').textContent = '管理員無限制';
-        document.getElementById('btn-vip-inventory').style.display = 'flex';
-    } else {
-        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-        document.getElementById('export-limit-txt').textContent = '每日限 2 次';
-        document.getElementById('import-limit-txt').textContent = '每日限 2 次';
-    }
+  const isAdmin = isLimitBypassed();
+  const isVip = isVipUser();
+
+  document.querySelectorAll('.admin-only').forEach(el => el.style.display = isAdmin ? 'flex' : 'none');
+
+  if (isAdmin) {
+      document.getElementById('export-limit-txt').textContent = '管理員無限制';
+      document.getElementById('import-limit-txt').textContent = '管理員無限制';
+      document.getElementById('vip-status-text').textContent = '管理員權限 ›';
+      document.getElementById('btn-vip-inventory').style.display = 'flex';
+  } else if (isVip) {
+      document.getElementById('export-limit-txt').textContent = '每日限 2 次 (VIP)';
+      document.getElementById('import-limit-txt').textContent = '每日限 2 次 (VIP)';
+      document.getElementById('vip-status-text').textContent = '已開通 (VIP) ›';
+      document.getElementById('btn-vip-inventory').style.display = 'flex';
+  } else {
+      document.getElementById('export-limit-txt').textContent = '每日限 2 次 (需VIP)';
+      document.getElementById('import-limit-txt').textContent = '每日限 2 次 (需VIP)';
+      document.getElementById('vip-status-text').textContent = '未開通 ›';
+      document.getElementById('btn-vip-inventory').style.display = 'flex';
+  }
+}
+
+// ★ 統一的 VIP 開通入口
+function promptVipCode() {
+  if (isLimitBypassed()) {
+      alert('您擁有最高管理員權限，已解鎖所有功能。');
+      return;
+  }
+  if (localStorage.getItem(`vip_${user.uid}`) === 'true') {
+      alert('您已經是 VIP 會員囉！\n享有品項彙整、無限制報表、以及 Excel 匯出/匯入等功能。');
+      return;
+  }
+  const code = prompt('請輸入 VIP 開通代碼：');
+  if (code === 'ED-PRO-INVENTORY') {
+      localStorage.setItem(`vip_${user.uid}`, 'true');
+      alert('🎉 恭喜！VIP 功能已永久開通。');
+      applyAdminUI();
+  } else if (code !== null) {
+      alert('❌ 代碼錯誤或無效');
+  }
+}
+
+function checkVipAccess() {
+  if (isVipUser()) {
+      openVipInventory();
+  } else {
+      promptVipCode();
+  }
 }
 
 function forceUpdateApp() {
-    toast('正在為您請求最新系統檔...', 'info');
-    setTimeout(() => {
-        const newUrl = window.location.origin + window.location.pathname + '?v=' + new Date().getTime();
-        window.location.href = newUrl;
-    }, 1000);
+  toast('正在為您請求最新系統檔...', 'info');
+  setTimeout(() => {
+      const newUrl = window.location.origin + window.location.pathname + '?v=' + new Date().getTime();
+      window.location.href = newUrl;
+  }, 1000);
 }
 
 function getActionCount(actionType) {
@@ -848,7 +898,7 @@ function checkActionLimit(actionType, maxLimit, requestAmount = 1) {
   if (isLimitBypassed()) return true;
   const currentCount = getActionCount(actionType);
   if (currentCount + requestAmount > maxLimit) {
-      alert(`⚠️ 操作受限\n為了保護資料庫，每日限制 ${actionType === 'add' ? '新增' : (actionType === 'delete' ? '刪除' : '操作')} 最多 ${maxLimit} 筆。\n您今日剩餘額度不足，請於明日再試。`);
+      alert(`⚠️ 操作受限\n為了保護資料庫，每日限制最多 ${maxLimit} 次。\n您今日剩餘額度不足，請於明日再試。`);
       return false;
   }
   return true;
@@ -994,7 +1044,6 @@ async function autoHealStats() {
             else localStorage.removeItem(key);
         }
         
-        // 標記本機快取結構為最新
         localStorage.setItem('cache_schema', CACHE_SCHEMA_VERSION);
         
         initMonthSelector();
@@ -1157,27 +1206,6 @@ function toggleVisibility(type, iconEl) {
     }
 }
 
-function checkVipAccess() {
-    if (isLimitBypassed()) {
-        openVipInventory();
-        return;
-    }
-
-    const isVip = localStorage.getItem(`vip_${user.uid}`);
-    if (isVip === 'true') {
-        openVipInventory();
-    } else {
-        const code = prompt('請輸入 VIP 開通代碼：');
-        if (code === 'ED-PRO-INVENTORY') {
-            localStorage.setItem(`vip_${user.uid}`, 'true');
-            alert('🎉 恭喜！VIP 功能已永久開通。');
-            openVipInventory();
-        } else if (code !== null) {
-            alert('❌ 代碼錯誤');
-        }
-    }
-}
-
 let vipSortMode = 'target'; 
 
 function openVipInventory() {
@@ -1292,14 +1320,11 @@ auth.onAuthStateChanged(u => {
 
     applyAdminUI(); 
 
-    // ★ 版本控制與多裝置同步機制 (利用時間戳記與 Schema Version)
     const localSchema = localStorage.getItem('cache_schema');
     
     if (localSchema !== CACHE_SCHEMA_VERSION) {
-        // 如果連 Schema (快取結構) 都不一樣，直接強制作大保養
         autoHealStats(); 
     } else {
-        // Schema 一致，嘗試比較本地時間戳記與雲端時間戳記
         const cachedStats = localStorage.getItem(`globalStats_${user.uid}`);
         if (cachedStats) {
             try {
@@ -1307,17 +1332,14 @@ auth.onAuthStateChanged(u => {
                 const localTs = globalStats.last_updated || 0;
                 
                 if (navigator.onLine) {
-                    // 只讀取雲端的一個 meta 檔案，極低成本
                     db.collection('users').doc(user.uid).collection('meta').doc('stats').get().then(doc => {
                         if (doc.exists) {
                             const cloudData = doc.data();
                             const cloudTs = cloudData.last_updated || 0;
                             if (cloudTs > localTs) {
-                                // 雲端比較新 (其他裝置寫入過)，觸發重建本地快取
                                 toast('發現其他裝置的新資料，同步中...', 'info');
                                 autoHealStats();
                             } else {
-                                // 本機最新，直接載入畫面
                                 initMonthSelector();
                                 refreshDash();
                             }
@@ -1418,7 +1440,6 @@ function goScreen(name) {
 
   SCREENS.forEach(s => document.getElementById('screen-'+s)?.classList.toggle('active', s===name));
   
-  // 更新 lastScreen 追蹤 (將 vip-inventory 也加入主返回記憶點)
   if (name === 'home' || name === 'history' || name === 'vip-inventory') { lastScreen = name; }
 
   ['home','history','converter','profile'].forEach(n => {
@@ -1436,7 +1457,7 @@ function goScreen(name) {
 
   if (name==='history') renderHistory();
   if (name==='add' && !editingTxId) clearForm(); 
-  if (name==='daily') renderDailySummary(); 
+  if (name==='daily') renderDailySummary(true); 
 }
 
 function goBackToList() { goScreen(lastScreen); }
@@ -1451,8 +1472,8 @@ function showInstructions() {
         '請選「期初設定」建立起始庫存。若補登舊紀錄，請直接修改「交易時間」，系統將自動同步所有結餘。\n\n' +
         '三、 雙軌查詢機制 (效能升級)\n' +
         '首頁永遠顯示「最新 30 筆」交易；紀錄頁可透過下拉選單精準查詢「特定月份」以減少流量消耗。\n\n' +
-        '四、 批次管理與限制\n' +
-        '一般使用者每日新增上限 200 筆，刪除 100 筆。在紀錄頁支援「批次刪除」快速清理測試資料。');
+        '四、 VIP與批次管理限制\n' +
+        '一般使用者每日新增上限 200 筆，刪除 100 筆。升級VIP即可享受所有進階資料匯出、全歷史報表與彙整功能。');
 }
 
 function setStockAlert() {
@@ -1522,7 +1543,7 @@ function loadHistoryMonth() {
         historyTx = [...recentTx];
         renderLimit = 20;
         renderHistory();
-        if(document.getElementById('screen-daily').classList.contains('active')) renderDailySummary();
+        if(document.getElementById('screen-daily').classList.contains('active')) renderDailySummary(false);
         return;
     }
 
@@ -1542,7 +1563,7 @@ function loadHistoryMonth() {
             historyTx = snap.docs.map(d => ({id: d.id, ...d.data()}));
             renderLimit = 20;
             renderHistory();
-            if(document.getElementById('screen-daily').classList.contains('active')) renderDailySummary();
+            if(document.getElementById('screen-daily').classList.contains('active')) renderDailySummary(false);
         }, err => {
             console.error(err);
             if(err.message.includes('index')) toast('正在建立遠端索引，請稍後重試', 'error');
@@ -1567,6 +1588,153 @@ function checkBackupReminder() {
   } else {
     banner.style.display = 'none';
   }
+}
+
+// ★ 準備匯出資料 (新增/復原功能)
+function prepareExport() {
+    if (!isVipUser()) {
+        alert('⚠️ 此功能目前為 VIP 限定，請先開通 VIP 權限。');
+        promptVipCode();
+        return;
+    }
+    if (!checkActionLimit('export', 2)) return;
+    document.getElementById('export-modal').style.display = 'flex';
+}
+
+function closeExportModal() {
+    document.getElementById('export-modal').style.display = 'none';
+}
+
+// ★ 執行 Excel 匯出
+async function executeExport() {
+    closeExportModal();
+    toast('正在準備匯出資料，請稍候...', 'info');
+    try {
+        let allData = getAllCachedIndices();
+        if (allData.length === 0) {
+            toast('無資料可匯出', 'error');
+            return;
+        }
+        
+        // Format for Excel
+        let wsData = [['交易日期', '交易類別', '重量動向', '台錢', '收付動向', '金額(NT$)', '交易對象', '備註']];
+        allData.forEach(tx => {
+            wsData.push([
+                tx.date ? tx.date.slice(0, 16).replace('T', ' ') : '',
+                tx.type || '',
+                tx.wDir || '',
+                tx.mace || 0,
+                tx.cDir || '',
+                tx.amount || 0,
+                tx.target || '',
+                tx.note || ''
+            ]);
+        });
+        
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        XLSX.utils.book_append_sheet(wb, ws, "庫存紀錄");
+        const today = new Date().toISOString().slice(0, 10);
+        XLSX.writeFile(wb, `貴金屬庫存紀錄_${today}.xlsx`);
+        
+        if (!isLimitBypassed()) incrementActionCount('export');
+        localStorage.setItem('lastBackupDate', Date.now());
+        toast('匯出成功！', 'success');
+        checkBackupReminder();
+    } catch (err) {
+        console.error(err);
+        toast('匯出失敗：' + err.message, 'error');
+    }
+}
+
+// ★ 檢查匯入限制與開啟檔案選擇 (新增/復原功能)
+function checkImportLimit() {
+    if (!isVipUser()) {
+        alert('⚠️ 此功能目前為 VIP 限定，請先開通 VIP 權限。');
+        promptVipCode();
+        return;
+    }
+    if (!checkActionLimit('import', 2)) return;
+    document.getElementById('import-file').click();
+}
+
+// ★ 執行 Excel 匯入
+async function doImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    event.target.value = ''; // Reset input
+    
+    toast('正在解析檔案...', 'info');
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+            
+            if (jsonData.length <= 1) { toast('檔案無有效資料', 'error'); return; }
+            
+            if (!confirm(`偵測到 ${jsonData.length - 1} 筆資料，即將進行匯入。\n(請確保為系統匯出的格式)`)) return;
+            
+            toast('資料寫入中，請勿關閉畫面...', 'info');
+            
+            const txColRef = db.collection('users').doc(user.uid).collection('transactions');
+            let batch = db.batch();
+            let count = 0;
+            let promises = [];
+            
+            for (let i = 1; i < jsonData.length; i++) {
+                const row = jsonData[i];
+                if (!row || row.length < 2) continue; 
+                
+                let dateStr = row[0] || new Date().toISOString();
+                if (!dateStr.includes('T')) dateStr = new Date(dateStr).toISOString();
+
+                let mace = parseFloat(row[3]) || 0;
+                let amount = parseInt(row[5]) || 0;
+
+                const txData = {
+                    timestamp: firebase.firestore.Timestamp.fromDate(new Date(dateStr)),
+                    date: new Date(dateStr).toISOString(),
+                    isBackdated: true,
+                    isEdited: false,
+                    type: row[1] || '一般進貨',
+                    wDir: row[2] || (mace>0?'入庫':''),
+                    mace: mace,
+                    gram: +(mace * 3.75).toFixed(3),
+                    tael: +(mace / 10).toFixed(4),
+                    oz: +(mace / 8.294).toFixed(4),
+                    cDir: row[4] || (amount>0?'支出':''),
+                    amount: amount,
+                    price: 0,
+                    target: row[6] || '',
+                    note: row[7] || ''
+                };
+
+                const newRef = txColRef.doc();
+                batch.set(newRef, txData);
+                count++;
+                
+                if (count % 400 === 0) {
+                    promises.push(batch.commit());
+                    batch = db.batch();
+                }
+            }
+            if (count % 400 !== 0) promises.push(batch.commit());
+            
+            await Promise.all(promises);
+            if (!isLimitBypassed()) incrementActionCount('import');
+            
+            await autoHealStats();
+            toast(`已成功匯入 ${count} 筆資料！`, 'success');
+            
+        } catch (err) {
+            console.error(err);
+            toast('匯入失敗：格式不符或系統異常', 'error');
+        }
+    };
+    reader.readAsArrayBuffer(file);
 }
 
 async function updateStatsCache(txData, oldTxData = null, isDelete = false) {
@@ -1706,7 +1874,6 @@ async function doSubmit() {
     }
     clearForm(); 
     
-    // 若原本是從 VIP 模式過來，儲存後直接回到 VIP，反之回到歷史
     if (lastScreen === 'vip-inventory') {
         goScreen('vip-inventory');
         renderVipInventory(vipSortMode);
@@ -1881,7 +2048,6 @@ function showDetail(id) {
     <div class="detail-row"><div class="detail-label">資料狀態</div><div class="detail-val" style="color:${statusText==='正常'?'var(--text2)':'var(--red)'};">${statusText}</div></div>
   `;
   
-  // ★ 在明細中加入編輯與刪除的捷徑按鈕
   html += `
     <div style="display:flex; gap:10px; margin-top: 16px; padding-top: 16px; border-top: 0.5px solid var(--border);">
       <button class="btn-primary" style="flex:1; background:var(--bg3); color:var(--text); border:0.5px solid var(--border);" onclick="editTx('${tx.id}')">✏️ 編輯</button>
@@ -2040,54 +2206,119 @@ function renderHistory() {
   el.innerHTML = html;
 }
 
-function renderDailySummary() {
+// ★ 全新改良版：日結報表邏輯
+let dailyRenderLimit = 30; 
+let dailyGroupedDates = []; 
+let dailyGroupedMap = {}; 
+
+function renderDailySummary(reset = true) {
+  if (reset) dailyRenderLimit = 30;
   const el = document.getElementById('daily-list');
-  if (!historyTx.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">該區間尚無資料</div></div>';
-    return;
+  const banner = document.getElementById('daily-vip-banner');
+  
+  // 透過 getAllCachedIndices 撈取「全部歷史資料」而非單月
+  const allData = getAllCachedIndices();
+  
+  if (!allData.length) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">尚無任何交易資料</div></div>';
+      banner.style.display = 'none';
+      return;
   }
   
   const grouped = {};
-  historyTx.forEach(tx => {
-    const d = tx.date ? new Date(tx.date).toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-') : '';
-    if(!d) return;
-    if(!grouped[d]) grouped[d] = { inW:0, outW:0, inC:0, outC:0 };
-    if(tx.wDir === '入庫') grouped[d].inW += tx.mace || 0;
-    if(tx.wDir === '出庫') grouped[d].outW += tx.mace || 0;
-    if(tx.cDir === '收入') grouped[d].inC += tx.amount || 0;
-    if(tx.cDir === '支出') grouped[d].outC += tx.amount || 0;
+  allData.forEach(tx => {
+      const d = tx.date ? new Date(tx.date).toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-') : '';
+      if(!d) return;
+      if(!grouped[d]) grouped[d] = { inW:0, outW:0, inC:0, outC:0 };
+      if(tx.wDir === '入庫') grouped[d].inW += tx.mace || 0;
+      if(tx.wDir === '出庫') grouped[d].outW += tx.mace || 0;
+      if(tx.cDir === '收入') grouped[d].inC += tx.amount || 0;
+      if(tx.cDir === '支出') grouped[d].outC += tx.amount || 0;
   });
 
-  const dates = Object.keys(grouped).sort((a,b) => b.localeCompare(a));
+  let dates = Object.keys(grouped).sort((a,b) => b.localeCompare(a));
+  
+  if (!isVipUser()) {
+      banner.style.display = 'block';
+      banner.innerHTML = '一般會員僅顯示 7 日內紀錄，<span style="text-decoration:underline; cursor:pointer; color:#fff;" onclick="promptVipCode()">開通 VIP 瀏覽全歷史</span>';
+      
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      dates = dates.filter(d => {
+          const parts = d.split('-');
+          if(parts.length === 3){
+              const txDate = new Date(parts[0], parts[1]-1, parts[2]);
+              return txDate >= sevenDaysAgo;
+          }
+          return false;
+      });
+  } else {
+      banner.style.display = 'block';
+      banner.textContent = '👑 VIP 專屬：您正在瀏覽所有歷史日結報表';
+  }
+  
+  dailyGroupedDates = dates;
+  dailyGroupedMap = grouped;
+  
+  renderDailyDOM();
+}
+
+function renderDailyDOM() {
+  const el = document.getElementById('daily-list');
+  
+  if (dailyGroupedDates.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">該區間內無結算資料</div></div>';
+      return;
+  }
+
+  const isVip = isVipUser();
+  const toRender = isVip ? dailyGroupedDates.slice(0, dailyRenderLimit) : dailyGroupedDates;
   
   let html = '';
-  dates.forEach(d => {
-    const g = grouped[d];
-    let avgCostText = '';
-    
-    // ★ 計算當日平均成本
-    if (g.inW > 0 && g.outC > 0) {
-        const avg = Math.round(g.outC / g.inW);
-        avgCostText = `<div style="font-size:11px; color:var(--text3); margin-top:4px; grid-column: 1 / -1; text-align:right;">當日平均成本: <b>NT$ ${avg.toLocaleString()} / 錢</b></div>`;
-    }
+  toRender.forEach(d => {
+      const g = dailyGroupedMap[d];
+      let avgCostText = '';
+      
+      if (g.inW > 0 && g.outC > 0) {
+          const avg = Math.round(g.outC / g.inW);
+          avgCostText = `<div style="font-size:11px; color:var(--text3); margin-top:4px; grid-column: 1 / -1; text-align:right;">當日平均成本: <b>NT$ ${avg.toLocaleString()} / 錢</b></div>`;
+      }
 
-    html += `
-      <div class="daily-card">
-        <div class="dc-header">
-          <div class="dc-date">${d}</div>
-          <div class="dc-label-title">日結總覽</div>
+      html += `
+        <div class="daily-card">
+          <div class="dc-header">
+            <div class="dc-date">${d}</div>
+            <div class="dc-label-title">日結總覽</div>
+          </div>
+          <div class="dc-grid">
+            <div class="dc-item"><div class="dc-label">入庫重量(錢)</div><div class="dc-val in">+${g.inW.toFixed(3)}</div></div>
+            <div class="dc-item"><div class="dc-label">出庫重量(錢)</div><div class="dc-val out">-${g.outW.toFixed(3)}</div></div>
+            <div class="dc-item"><div class="dc-label">當日收入(元)</div><div class="dc-val in">+${g.inC.toLocaleString()}</div></div>
+            <div class="dc-item"><div class="dc-label">當日支出(元)</div><div class="dc-val out">-${g.outC.toLocaleString()}</div></div>
+            ${avgCostText}
+          </div>
         </div>
-        <div class="dc-grid">
-          <div class="dc-item"><div class="dc-label">入庫重量(錢)</div><div class="dc-val in">+${g.inW.toFixed(3)}</div></div>
-          <div class="dc-item"><div class="dc-label">出庫重量(錢)</div><div class="dc-val out">-${g.outW.toFixed(3)}</div></div>
-          <div class="dc-item"><div class="dc-label">當日收入(元)</div><div class="dc-val in">+${g.inC.toLocaleString()}</div></div>
-          <div class="dc-item"><div class="dc-label">當日支出(元)</div><div class="dc-val out">-${g.outC.toLocaleString()}</div></div>
-          ${avgCostText}
-        </div>
-      </div>
-    `;
+      `;
   });
+  
+  if (isVip && dailyGroupedDates.length > dailyRenderLimit) {
+      html += `<div style="text-align:center; padding:10px; color:var(--text3); font-size:13px;">往下滑動載入更多...</div>`;
+  } else if (isVip) {
+      html += `<div style="text-align:center; padding:10px; color:var(--text3); font-size:13px;">已載入全部資料</div>`;
+  }
+  
   el.innerHTML = html;
+}
+
+// ★ 日結報表 VIP 專屬向下滾動載入機制
+function checkDailyScroll(element) {
+  if (!isVipUser()) return;
+  if (dailyRenderLimit >= dailyGroupedDates.length) return;
+  
+  if (element.scrollHeight - element.scrollTop <= element.clientHeight + 50) {
+      dailyRenderLimit += 60; 
+      renderDailyDOM();
+  }
 }
 
 function setFilter(f, el) {
@@ -2247,7 +2478,7 @@ async function executeNukeDatabase() {
 
         localStorage.removeItem(`globalStats_${user.uid}`);
         for (let i=0; i<3; i++) {
-            localStorage.removeItem(`searchIndex_${user.uid}${i === 0 ? '' : '_' + i}`);
+             localStorage.removeItem(`searchIndex_${user.uid}${i === 0 ? '' : '_' + i}`);
         }
         
         globalStats = { totalW: 0, totalC: 0, monthly: {}, initialMonth: '', last_updated: 0 };
@@ -2266,7 +2497,7 @@ async function executeNukeDatabase() {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.17\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.18\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
@@ -2275,3 +2506,6 @@ function toast(msg, type='') {
   setTimeout(()=>{ t.className=''; }, 3000);
 }
 </script>
+</body>
+</html>
+  
