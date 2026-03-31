@@ -631,7 +631,7 @@
 
         <div class="menu-item" onclick="forceUpdateApp()">
           <div class="mi-left"><div class="mi-icon" style="background:#0d1a2b; color:#4ea8de;">🚀</div><div class="mi-label" style="color:#4ea8de;">檢查並強制更新系統</div></div>
-          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.20</div>
+          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.22</div>
         </div>
 
         <div class="menu-item" onclick="prepareExport()">
@@ -754,9 +754,9 @@
 <div id="toast"></div>
 <script>
 // ★ UI 顯示版本號 (更新版號)
-const APP_VERSION = 'v1.21';
-// ★ 快取結構版本號
-const CACHE_SCHEMA_VERSION = 'v2'; 
+const APP_VERSION = 'v1.22';
+// ★ 快取結構版本號 (強制重新建立完整快取)
+const CACHE_SCHEMA_VERSION = 'v3'; 
 
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get('v')) {
@@ -770,7 +770,7 @@ if (urlParams.get('v')) {
     window.onload = () => { setTimeout(() => toast('系統已強制更新至最新版！', 'success'), 800); };
 }
 
-// 敏感資訊簡單遮蔽 (Base64解碼，降低在 F12 直接曝光的風險)
+// 敏感資訊簡單遮蔽
 const _k = atob("QUl6YVN5QzZiRTVSV1c4c1hrUjRmbFNELXdkR2Ftd3l5VEZKb1Nz");
 const _p = atob("Z29sZC1pbnZlbnRvcnktYXBwLWE5ZWFm");
 const firebaseConfig = {
@@ -794,11 +794,9 @@ const db = firebase.firestore();
 
 // State & Cache
 let user = null;
-let recentTx = []; 
-let historyTx = []; 
+let historyTx = []; // 取代 recentTx，統一為當前要顯示的陣列
 let curFilter = '全部';
 let fState = { type: '一般進貨', wDir: '入庫', cDir: '支出', sync: false };
-let unsubRecent = null;
 let unsubHistory = null;
 let unsubStats = null;
 let editingTxId = null;
@@ -845,7 +843,6 @@ function applyAdminUI() {
   }
 }
 
-// ★ VIP 驗證改為對接資料庫邏輯
 async function promptVipCode() {
   if (isLimitBypassed()) {
       alert('您擁有最高管理員權限，已解鎖所有功能。');
@@ -857,9 +854,8 @@ async function promptVipCode() {
   }
   
   const code = prompt('請輸入開通碼：');
-  if (!code) return; // 按下取消或空白
+  if (!code) return; 
 
-  // 萬用備用測試碼 (方便您直接開通)
   if (code === 'ED-PRO-INVENTORY') {
       localStorage.setItem(`vip_${user.uid}`, 'true');
       db.collection('users').doc(user.uid).set({isVip: true}, {merge: true});
@@ -868,7 +864,6 @@ async function promptVipCode() {
       return;
   }
 
-  // 連線資料庫進行單次金鑰驗證
   try {
       toast('正在驗證開通碼...', 'info');
       const keyRef = db.collection('vip_keys').doc(code);
@@ -892,7 +887,6 @@ async function promptVipCode() {
           return;
       }
 
-      // 驗證成功：將金鑰標記為已使用，並開通該用戶
       await keyRef.update({
           used: true,
           usedBy: user.uid,
@@ -980,18 +974,6 @@ function initMonthSelector() {
       btnInit.style.display = 'none';
   }
 }
-
-function getAllCachedIndices() {
-    let allData = [];
-    for (let i = 0; i < 3; i++) {
-        let key = `searchIndex_${user.uid}${i === 0 ? '' : '_' + i}`;
-        let indexStr = localStorage.getItem(key);
-        if (indexStr) {
-            allData = allData.concat(JSON.parse(indexStr));
-        }
-    }
-    return allData;
-}
   function updateSearchIndex(id, txData, isDelete) {
     if (!user) return;
     
@@ -1002,18 +984,23 @@ function getAllCachedIndices() {
         allItems.push({
            id: id,
            date: txData.date,
+           isEdited: txData.isEdited || false,
+           isBackdated: txData.isBackdated || false,
            type: txData.type,
            wDir: txData.wDir,
            cDir: txData.cDir,
            mace: txData.mace,
            amount: txData.amount,
+           price: txData.price || 0,
            target: txData.target || '',
            note: txData.note || ''
         });
     }
 
+    // 依日期降冪排序
     allItems.sort((a,b) => new Date(b.date) - new Date(a.date));
 
+    // 切割並存入 LocalStorage
     for (let i = 0; i < 3; i++) {
         let key = `searchIndex_${user.uid}${i === 0 ? '' : '_' + i}`;
         let chunk = allItems.slice(i * CACHE_CHUNK_SIZE, (i + 1) * CACHE_CHUNK_SIZE);
@@ -1024,6 +1011,7 @@ function getAllCachedIndices() {
         }
     }
 
+    // 將更新後的快取包上傳至雲端，供其他裝置同步使用
     if (navigator.onLine) {
         setTimeout(() => {
              for (let i = 0; i < 3; i++) {
@@ -1031,16 +1019,57 @@ function getAllCachedIndices() {
                 let chunk = allItems.slice(i * CACHE_CHUNK_SIZE, (i + 1) * CACHE_CHUNK_SIZE);
                 if (chunk.length > 0) {
                      db.collection('users').doc(user.uid).collection('meta').doc(docId).set({items: chunk}).catch(e => console.warn(e));
+                } else {
+                     db.collection('users').doc(user.uid).collection('meta').doc(docId).delete().catch(()=>{});
                 }
              }
         }, 500); 
     }
 }
 
+// ★ 全新：輕量級差異化同步 (Delta Sync)
+async function syncFromCloudCache() {
+    toast('發現其他裝置的新資料，同步中...', 'info');
+    try {
+        let hasData = false;
+        for (let i = 0; i < 3; i++) {
+            let docId = `searchIndex${i === 0 ? '' : '_' + i}`;
+            let key = `searchIndex_${user.uid}${i === 0 ? '' : '_' + i}`;
+            let doc = await db.collection('users').doc(user.uid).collection('meta').doc(docId).get();
+            if (doc.exists && doc.data().items && doc.data().items.length > 0) {
+                localStorage.setItem(key, JSON.stringify(doc.data().items));
+                hasData = true;
+            } else {
+                localStorage.removeItem(key);
+            }
+        }
+        
+        const statsDoc = await db.collection('users').doc(user.uid).collection('meta').doc('stats').get();
+        if (statsDoc.exists) {
+            globalStats = statsDoc.data();
+            localStorage.setItem(`globalStats_${user.uid}`, JSON.stringify(globalStats));
+        }
+        
+        initMonthSelector();
+        refreshDash();
+        
+        // 刷新目前所在的頁面資料
+        if(document.getElementById('screen-history').classList.contains('active')) loadHistoryMonth();
+        if(document.getElementById('screen-daily').classList.contains('active')) renderDailySummary(false);
+        if(document.getElementById('screen-vip-inventory').classList.contains('active')) renderVipInventory(vipSortMode);
+        
+        toast('資料已同步至最新！', 'success');
+    } catch(e) {
+        console.warn("快取同步失敗，啟動備用修復機制:", e);
+        autoHealStats(); // 若發生意外，回退到暴力修復
+    }
+}
+
+// ★ 暴力修復機制 (僅在初次登入、快取版本更新、或資料損毀時才觸發)
 async function autoHealStats() {
     if (!user) return;
     try {
-        toast('系統升級與同步整理中，請稍候...', 'info');
+        toast('系統架構升級與重建索引中，請稍候...', 'info');
         const snap = await db.collection('users').doc(user.uid).collection('transactions').get();
         let totalW = 0, totalC = 0;
         let monthly = {};
@@ -1069,11 +1098,14 @@ async function autoHealStats() {
             newSearchIndex.push({
                id: doc.id,
                date: data.date,
+               isEdited: data.isEdited || false,
+               isBackdated: data.isBackdated || false,
                type: data.type,
                wDir: data.wDir,
                cDir: data.cDir,
                mace: data.mace,
                amount: data.amount,
+               price: data.price || 0,
                target: data.target || '',
                note: data.note || ''
             });
@@ -1106,9 +1138,15 @@ async function autoHealStats() {
                 }
              }
         }
-        toast('系統同步完成！', 'success');
+        toast('系統同步與索引重建完成！', 'success');
+        
+        // 刷新目前所在的頁面資料
+        if(document.getElementById('screen-history').classList.contains('active')) loadHistoryMonth();
+        if(document.getElementById('screen-daily').classList.contains('active')) renderDailySummary(false);
+        if(document.getElementById('screen-vip-inventory').classList.contains('active')) renderVipInventory(vipSortMode);
+        
     } catch(e) {
-        console.warn("自動修復快取失敗:", e);
+        console.warn("自動修復失敗:", e);
     }
 }
 
@@ -1123,7 +1161,7 @@ async function openGlobalSearch() {
         try {
             const doc = await db.collection('users').doc(user.uid).collection('meta').doc('searchIndex').get();
             if (doc.exists) {
-                 await autoHealStats();
+                 await syncFromCloudCache();
             } else {
                 await autoHealStats(); 
             }
@@ -1184,8 +1222,6 @@ async function fetchAndLockSingleRecord(id, dateStr) {
     banner.style.display = 'block';
     banner.textContent = `🔙 返回搜尋結果 (找到 ${lastGlobalSearchCount} 筆)`;
 
-    if (unsubHistory) { unsubHistory(); unsubHistory = null; }
-
     if (dateStr) {
         const month = dateStr.slice(0, 7);
         const selector = document.getElementById('month-selector');
@@ -1199,17 +1235,19 @@ async function fetchAndLockSingleRecord(id, dateStr) {
     document.getElementById('history-list').innerHTML = '<div class="empty-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
 
     try {
-        toast('正在向雲端請求完整資料...', 'info');
-        let localDoc = recentTx.find(t => t.id === id);
+        let localDoc = getAllCachedIndices().find(t => t.id === id);
         if (localDoc) {
             historyTx = [localDoc];
-        } else {
+        } else if (navigator.onLine) {
+            toast('正在向雲端請求完整資料...', 'info');
             const doc = await db.collection('users').doc(user.uid).collection('transactions').doc(id).get();
             if (doc.exists) {
                 historyTx = [{id: doc.id, ...doc.data()}];
             } else {
                 throw new Error('資料已不存在');
             }
+        } else {
+            throw new Error('離線狀態，無法取得舊資料');
         }
         renderLimit = 25;
         renderHistory();  
@@ -1229,8 +1267,8 @@ function exitSingleRecordMode() {
 async function fetchAndShowVipDetail(id) {
     toast('載入明細中...', 'info');
     try {
-        let tx = recentTx.find(t => t.id === id);
-        if (!tx) {
+        let tx = getAllCachedIndices().find(t => t.id === id);
+        if (!tx && navigator.onLine) {
             const doc = await db.collection('users').doc(user.uid).collection('transactions').doc(id).get();
             if (doc.exists) {
                 tx = {id: doc.id, ...doc.data()};
@@ -1238,6 +1276,7 @@ async function fetchAndShowVipDetail(id) {
                 throw new Error('資料已不存在');
             }
         }
+        if(!tx) throw new Error('找不到該筆紀錄');
         historyTx = [tx]; 
         lastScreen = 'vip-inventory'; 
         showDetail(id);
@@ -1393,14 +1432,13 @@ auth.onAuthStateChanged(async (u) => {
     const alertVal = localStorage.getItem(`alert_${user.uid}`);
     document.getElementById('alert-level-text').innerHTML = alertVal ? `${alertVal} 錢 ›` : '未設定 ›';
 
-    // ★ 每次登入/重整，檢查後端真正的 VIP 狀態，防止前端被串改
     if (navigator.onLine && !isLimitBypassed()) {
         try {
             const userDoc = await db.collection('users').doc(u.uid).get();
             if (userDoc.exists && userDoc.data().isVip) {
                 localStorage.setItem(`vip_${u.uid}`, 'true');
             } else {
-                localStorage.removeItem(`vip_${u.uid}`); // 若後端無權限，撤銷前端權限
+                localStorage.removeItem(`vip_${u.uid}`); 
             }
         } catch(e) {
             console.warn("無法取得後端權限狀態，沿用本機設定");
@@ -1425,8 +1463,7 @@ auth.onAuthStateChanged(async (u) => {
                             const cloudData = doc.data();
                             const cloudTs = cloudData.last_updated || 0;
                             if (cloudTs > localTs) {
-                                toast('發現其他裝置的新資料，同步中...', 'info');
-                                autoHealStats();
+                                syncFromCloudCache(); // ★ 升級為 Delta Sync
                             } else {
                                 initMonthSelector();
                                 refreshDash();
@@ -1459,8 +1496,6 @@ auth.onAuthStateChanged(async (u) => {
   } else {
     user = null;
     if (unsubStats) unsubStats();
-    if (unsubRecent) unsubRecent();
-    if (unsubHistory) unsubHistory();
     document.getElementById('main-app').style.display = 'none';
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('auth-screen').classList.add('active');
@@ -1582,18 +1617,26 @@ function setStockAlert() {
 
 function txCol() { return db.collection('users').doc(user.uid).collection('transactions'); }
 
+// ★ 監聽機制全面升級為 0 次讀取交易
 function subTx() {
   if (unsubStats) unsubStats();
-  if (unsubRecent) unsubRecent();
 
+  // 現在只監聽這個輕量級的 stats 檔案，完全不再 onSnapshot 交易資料表！
   unsubStats = db.collection('users').doc(user.uid).collection('meta').doc('stats').onSnapshot(doc => {
       if (doc.exists) {
-          globalStats = doc.data();
-          if(!globalStats.monthly) globalStats.monthly = {};
-          localStorage.setItem(`globalStats_${user.uid}`, JSON.stringify(globalStats));
+          const cloudData = doc.data();
+          const cloudTs = cloudData.last_updated || 0;
+          const localTs = globalStats.last_updated || 0;
           
-          initMonthSelector();
-          refreshDash();
+          if (cloudTs > localTs) {
+              syncFromCloudCache(); // 當發現雲端較新，啟動 Delta Sync
+          } else {
+              globalStats = cloudData;
+              if(!globalStats.monthly) globalStats.monthly = {};
+              localStorage.setItem(`globalStats_${user.uid}`, JSON.stringify(globalStats));
+              initMonthSelector();
+              refreshDash();
+          }
       } else {
           autoHealStats();
       }
@@ -1601,61 +1644,26 @@ function subTx() {
       if (err.message.includes('permission') || err.code === 'permission-denied') autoHealStats();
   });
 
-  unsubRecent = txCol().orderBy('timestamp','desc').limit(25).onSnapshot(snap => {
-      recentTx = snap.docs.map(d => ({id: d.id, ...d.data()}));
-      
-      if (recentTx.length > 0 && Object.keys(globalStats.monthly || {}).length === 0) {
-          autoHealStats();
-      }
-
-      refreshDash();
-      
-      const mode = document.getElementById('month-selector') ? document.getElementById('month-selector').value : 'recent';
-      if (mode === 'recent') {
-          historyTx = [...recentTx];
-          renderHistory();
-      }
-  });
-
+  refreshDash();
   loadHistoryMonth();
 }
 
+// ★ 歷史紀錄全快取化 (0 次資料庫讀取)
 function loadHistoryMonth() {
-    if (unsubHistory) { unsubHistory(); unsubHistory = null; }
-    
     document.getElementById('single-record-banner').style.display = 'none';
 
     const mode = document.getElementById('month-selector').value;
+    const allTx = getAllCachedIndices();
     
     if (mode === 'recent') {
-        historyTx = [...recentTx];
-        renderLimit = 25;
-        renderHistory();
-        if(document.getElementById('screen-daily').classList.contains('active')) renderDailySummary(false);
-        return;
+        historyTx = allTx.slice(0, 25);
+    } else {
+        historyTx = allTx.filter(tx => tx.date && tx.date.startsWith(mode));
     }
-
-    document.getElementById('history-list').innerHTML = '<div class="empty-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
-
-    const startStr = `${mode}-01T00:00:00.000Z`;
-    const startDate = new Date(startStr);
-    const endYear = startDate.getMonth() === 11 ? startDate.getFullYear() + 1 : startDate.getFullYear();
-    const endMonth = startDate.getMonth() === 11 ? 0 : startDate.getMonth() + 1;
-    const endDate = new Date(endYear, endMonth, 1);
-
-    unsubHistory = txCol()
-        .where('timestamp', '>=', firebase.firestore.Timestamp.fromDate(startDate))
-        .where('timestamp', '<', firebase.firestore.Timestamp.fromDate(endDate))
-        .orderBy('timestamp', 'desc')
-        .onSnapshot(snap => {
-            historyTx = snap.docs.map(d => ({id: d.id, ...d.data()}));
-            renderLimit = 25;
-            renderHistory();
-            if(document.getElementById('screen-daily').classList.contains('active')) renderDailySummary(false);
-        }, err => {
-            console.error(err);
-            if(err.message.includes('index')) toast('正在建立遠端索引，請稍後重試', 'error');
-        });
+    
+    renderLimit = 25;
+    renderHistory();
+    if(document.getElementById('screen-daily').classList.contains('active')) renderDailySummary(false);
 }
 
 function jumpToInitial() {
@@ -1671,7 +1679,7 @@ function checkBackupReminder() {
   const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
   const banner = document.getElementById('backup-reminder');
   
-  if (recentTx.length > 0 && (!lastBackup || (now - lastBackup > ONE_WEEK))) {
+  if (getAllCachedIndices().length > 0 && (!lastBackup || (now - lastBackup > ONE_WEEK))) {
     banner.style.display = 'flex';
   } else {
     banner.style.display = 'none';
@@ -1931,7 +1939,7 @@ async function doSubmit() {
     let docId = editingTxId; 
 
     if (editingTxId) {
-      let oldData = historyTx.find(t => t.id === editingTxId) || recentTx.find(t => t.id === editingTxId) || getAllCachedIndices().find(t => t.id === editingTxId);
+      let oldData = getAllCachedIndices().find(t => t.id === editingTxId);
       if (!oldData && navigator.onLine) { const doc = await txColRef.doc(editingTxId).get(); oldData = doc.data(); }
       writePromise = txColRef.doc(editingTxId).update(txData);
       updateStatsCache(txData, oldData, false);
@@ -1971,7 +1979,7 @@ async function deleteTx(id, backToList = false) {
   if (!checkActionLimit('delete', 100)) return;
   if (!confirm('確定要刪除這筆紀錄嗎？\n(刪除後總庫存將自動重新計算)')) return;
   try {
-    let txData = historyTx.find(t => t.id === id) || recentTx.find(t => t.id === id) || getAllCachedIndices().find(t => t.id === id);
+    let txData = getAllCachedIndices().find(t => t.id === id);
     if (!txData && navigator.onLine) { const doc = await txCol().doc(id).get(); txData = doc.data(); }
     
     const delPromise = txCol().doc(id).delete();
@@ -2065,8 +2073,7 @@ async function executeBatchDelete() {
 }
 
 function editTx(id) {
-  let tx = historyTx.find(t => t.id === id) || recentTx.find(t => t.id === id);
-  if (!tx) tx = getAllCachedIndices().find(t => t.id === id);
+  let tx = getAllCachedIndices().find(t => t.id === id);
   if (!tx) return;
   
   editingTxId = id; 
@@ -2103,8 +2110,7 @@ function showDetail(id) {
       return;
   }
 
-  let tx = historyTx.find(t => t.id === id) || recentTx.find(t => t.id === id);
-  if (!tx) tx = getAllCachedIndices().find(t => t.id === id);
+  let tx = getAllCachedIndices().find(t => t.id === id);
   if (!tx) return;
   
   const isIn = tx.wDir === '入庫';
@@ -2142,7 +2148,7 @@ function showDetail(id) {
   goScreen('detail');
 }
 
-// ★ 今日概況修復：改用本機所有快取資料(無筆數限制)計算今日收支
+// ★ 今日概況完美修復：從全域快取計算，不再受限於前 25 筆
 function refreshDash() {
   const totW = globalStats.totalW || 0;
   const totC = globalStats.totalC || 0;
@@ -2169,7 +2175,6 @@ function refreshDash() {
   document.getElementById('s-balance').setAttribute('data-val', balanceStr);
   if(!isBalanceHidden) document.getElementById('s-balance').textContent = balanceStr;
 
-  // ★ 核心變更：使用 getAllCachedIndices 確保算到今天所有的紀錄，不會被 25 筆截斷
   const today = new Date().toISOString().slice(0,10);
   let tiw=0,tow=0,tic=0,toc=0;
   const allTx = getAllCachedIndices(); 
@@ -2189,8 +2194,9 @@ function refreshDash() {
   document.getElementById('td-outc').textContent = '-' + toc.toLocaleString();
   
   const recentEl = document.getElementById('recent-list');
-  if (recentTx.length > 0) {
-      let html = recentTx.slice(0,5).map(txCard).join('');
+  const recent5 = allTx.slice(0, 5); // 直接從快取拿前 5 筆
+  if (recent5.length > 0) {
+      let html = recent5.map(txCard).join('');
       html += `<button class="btn-load-more" onclick="goScreen('history'); document.getElementById('month-selector').value='recent'; loadHistoryMonth();">查看更多近期紀錄 ›</button>`;
       recentEl.innerHTML = html;
   } else {
@@ -2577,7 +2583,7 @@ async function executeNukeDatabase() {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.21\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.22\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
