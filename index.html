@@ -292,7 +292,7 @@
     #toast.error { background: var(--red); color: #fff; }
     #toast.info { background: #0d1a2b; color: #4ea8de; }
   </style>
-</head>
+  </head>
 <body>
 <div id="app">
 
@@ -753,9 +753,9 @@
 </div>
 <div id="toast"></div>
 <script>
-// ★ UI 顯示版本號
-const APP_VERSION = 'v1.20';
-// ★ 快取結構版本號 (不變，避免全資料重抓)
+// ★ UI 顯示版本號 (更新版號)
+const APP_VERSION = 'v1.21';
+// ★ 快取結構版本號
 const CACHE_SCHEMA_VERSION = 'v2'; 
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -770,12 +770,14 @@ if (urlParams.get('v')) {
     window.onload = () => { setTimeout(() => toast('系統已強制更新至最新版！', 'success'), 800); };
 }
 
-// Firebase config
+// 敏感資訊簡單遮蔽 (Base64解碼，降低在 F12 直接曝光的風險)
+const _k = atob("QUl6YVN5QzZiRTVSV1c4c1hrUjRmbFNELXdkR2Ftd3l5VEZKb1Nz");
+const _p = atob("Z29sZC1pbnZlbnRvcnktYXBwLWE5ZWFm");
 const firebaseConfig = {
-  apiKey: "AIzaSyC6bE5RWW8sXkR4flSD-wdGamwyyTFJoSs",
-  authDomain: "gold-inventory-app-a9eaf.firebaseapp.com",
-  projectId: "gold-inventory-app-a9eaf",
-  storageBucket: "gold-inventory-app-a9eaf.firebasestorage.app",
+  apiKey: _k,
+  authDomain: _p + ".firebaseapp.com",
+  projectId: _p,
+  storageBucket: _p + ".firebasestorage.app",
   messagingSenderId: "709513635170",
   appId: "1:709513635170:web:22f6ae6aa6e1fc4ed0783b"
 };
@@ -804,7 +806,7 @@ let lastScreen = 'home';
 let isBatchDeleteMode = false;
 let batchSelectedIds = new Set();
 let globalStats = { totalW: 0, totalC: 0, monthly: {}, initialMonth: '', last_updated: 0 };
-let renderLimit = 25; // 配合 UI 的 25 筆
+let renderLimit = 25; 
 let lastGlobalSearchCount = 0; 
 let isWeightHidden = false;
 let isBalanceHidden = false;
@@ -843,7 +845,8 @@ function applyAdminUI() {
   }
 }
 
-function promptVipCode() {
+// ★ VIP 驗證改為對接資料庫邏輯
+async function promptVipCode() {
   if (isLimitBypassed()) {
       alert('您擁有最高管理員權限，已解鎖所有功能。');
       return;
@@ -852,13 +855,59 @@ function promptVipCode() {
       alert('您已經是 VIP 會員囉！\n享有品項彙整、無限制報表、以及 Excel 匯出/匯入等功能。');
       return;
   }
-  const code = prompt('請輸入 VIP 開通代碼：');
+  
+  const code = prompt('請輸入開通碼：');
+  if (!code) return; // 按下取消或空白
+
+  // 萬用備用測試碼 (方便您直接開通)
   if (code === 'ED-PRO-INVENTORY') {
       localStorage.setItem(`vip_${user.uid}`, 'true');
+      db.collection('users').doc(user.uid).set({isVip: true}, {merge: true});
       alert('🎉 恭喜！VIP 功能已永久開通。');
       applyAdminUI();
-  } else if (code !== null) {
-      alert('❌ 代碼錯誤或無效');
+      return;
+  }
+
+  // 連線資料庫進行單次金鑰驗證
+  try {
+      toast('正在驗證開通碼...', 'info');
+      const keyRef = db.collection('vip_keys').doc(code);
+      const keyDoc = await keyRef.get();
+      
+      if (!keyDoc.exists) {
+          alert('❌ 開通碼不存在或輸入錯誤');
+          return;
+      }
+
+      const keyData = keyDoc.data();
+      if (keyData.used) {
+          if (keyData.usedBy === user.uid) {
+              alert('您之前已經使用過此開通碼囉！系統已為您恢復權限。');
+              localStorage.setItem(`vip_${user.uid}`, 'true');
+              db.collection('users').doc(user.uid).set({isVip: true}, {merge: true});
+              applyAdminUI();
+          } else {
+              alert('❌ 此開通碼已被其他帳號使用');
+          }
+          return;
+      }
+
+      // 驗證成功：將金鑰標記為已使用，並開通該用戶
+      await keyRef.update({
+          used: true,
+          usedBy: user.uid,
+          usedEmail: user.email || '未知',
+          usedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      await db.collection('users').doc(user.uid).set({isVip: true}, {merge: true});
+      localStorage.setItem(`vip_${user.uid}`, 'true');
+      
+      alert('🎉 恭喜！VIP 專屬功能已永久開通。');
+      applyAdminUI();
+      
+  } catch (e) {
+      console.error(e);
+      alert('驗證時發生網路錯誤，請稍後再試。');
   }
 }
 
@@ -943,8 +992,7 @@ function getAllCachedIndices() {
     }
     return allData;
 }
-
-function updateSearchIndex(id, txData, isDelete) {
+  function updateSearchIndex(id, txData, isDelete) {
     if (!user) return;
     
     let allItems = getAllCachedIndices();
@@ -1330,7 +1378,7 @@ function calcVipTotal() {
 }
 
 
-auth.onAuthStateChanged(u => {
+auth.onAuthStateChanged(async (u) => {
   document.getElementById('loading').style.display = 'none';
   if (u) {
     user = u;
@@ -1345,6 +1393,19 @@ auth.onAuthStateChanged(u => {
     const alertVal = localStorage.getItem(`alert_${user.uid}`);
     document.getElementById('alert-level-text').innerHTML = alertVal ? `${alertVal} 錢 ›` : '未設定 ›';
 
+    // ★ 每次登入/重整，檢查後端真正的 VIP 狀態，防止前端被串改
+    if (navigator.onLine && !isLimitBypassed()) {
+        try {
+            const userDoc = await db.collection('users').doc(u.uid).get();
+            if (userDoc.exists && userDoc.data().isVip) {
+                localStorage.setItem(`vip_${u.uid}`, 'true');
+            } else {
+                localStorage.removeItem(`vip_${u.uid}`); // 若後端無權限，撤銷前端權限
+            }
+        } catch(e) {
+            console.warn("無法取得後端權限狀態，沿用本機設定");
+        }
+    }
     applyAdminUI(); 
 
     const localSchema = localStorage.getItem('cache_schema');
@@ -1540,7 +1601,6 @@ function subTx() {
       if (err.message.includes('permission') || err.code === 'permission-denied') autoHealStats();
   });
 
-  // ★ 這裡修改為 limit(25) 配合您的需求
   unsubRecent = txCol().orderBy('timestamp','desc').limit(25).onSnapshot(snap => {
       recentTx = snap.docs.map(d => ({id: d.id, ...d.data()}));
       
@@ -1618,7 +1678,6 @@ function checkBackupReminder() {
   }
 }
 
-// ★ 準備匯出資料 (新增/復原功能)
 function prepareExport() {
     if (!isVipUser()) {
         alert('⚠️ 此功能目前為 VIP 限定，請先開通 VIP 權限。');
@@ -1633,7 +1692,6 @@ function closeExportModal() {
     document.getElementById('export-modal').style.display = 'none';
 }
 
-// ★ 執行 Excel 匯出
 async function executeExport() {
     closeExportModal();
     toast('正在準備匯出資料，請稍候...', 'info');
@@ -1644,7 +1702,6 @@ async function executeExport() {
             return;
         }
         
-        // Format for Excel
         let wsData = [['交易日期', '交易類別', '重量動向', '台錢', '收付動向', '金額(NT$)', '交易對象', '備註']];
         allData.forEach(tx => {
             wsData.push([
@@ -1675,7 +1732,6 @@ async function executeExport() {
     }
 }
 
-// ★ 檢查匯入限制與開啟檔案選擇 (新增/復原功能)
 function checkImportLimit() {
     if (!isVipUser()) {
         alert('⚠️ 此功能目前為 VIP 限定，請先開通 VIP 權限。');
@@ -1686,11 +1742,10 @@ function checkImportLimit() {
     document.getElementById('import-file').click();
 }
 
-// ★ 執行 Excel 匯入
 async function doImport(event) {
     const file = event.target.files[0];
     if (!file) return;
-    event.target.value = ''; // Reset input
+    event.target.value = ''; 
     
     toast('正在解析檔案...', 'info');
     const reader = new FileReader();
@@ -2087,6 +2142,7 @@ function showDetail(id) {
   goScreen('detail');
 }
 
+// ★ 今日概況修復：改用本機所有快取資料(無筆數限制)計算今日收支
 function refreshDash() {
   const totW = globalStats.totalW || 0;
   const totC = globalStats.totalC || 0;
@@ -2113,9 +2169,12 @@ function refreshDash() {
   document.getElementById('s-balance').setAttribute('data-val', balanceStr);
   if(!isBalanceHidden) document.getElementById('s-balance').textContent = balanceStr;
 
+  // ★ 核心變更：使用 getAllCachedIndices 確保算到今天所有的紀錄，不會被 25 筆截斷
   const today = new Date().toISOString().slice(0,10);
   let tiw=0,tow=0,tic=0,toc=0;
-  recentTx.forEach(tx => {
+  const allTx = getAllCachedIndices(); 
+  
+  allTx.forEach(tx => {
     if ((tx.date||'').slice(0,10)===today) {
       if(tx.wDir==='入庫') tiw+=tx.mace||0;
       if(tx.wDir==='出庫') tow+=tx.mace||0;
@@ -2123,6 +2182,7 @@ function refreshDash() {
       if(tx.cDir==='支出') toc+=tx.amount||0;
     }
   });
+  
   document.getElementById('td-inw').textContent = '+' + tiw.toFixed(3);
   document.getElementById('td-outw').textContent = '-' + tow.toFixed(3);
   document.getElementById('td-inc').textContent = '+' + tic.toLocaleString();
@@ -2234,7 +2294,6 @@ function renderHistory() {
   el.innerHTML = html;
 }
 
-// ★ 全新改良版：日結報表邏輯
 let dailyRenderLimit = 30; 
 let dailyGroupedDates = []; 
 let dailyGroupedMap = {}; 
@@ -2306,7 +2365,6 @@ function renderDailyDOM() {
       const g = dailyGroupedMap[d];
       let avgCostText = '';
       
-      // ★ 將字眼修改為「當日入庫平均成本」
       if (g.inW > 0 && g.outC > 0) {
           const avg = Math.round(g.outC / g.inW);
           avgCostText = `<div style="font-size:11px; color:var(--text3); margin-top:4px; grid-column: 1 / -1; text-align:right;">當日入庫平均成本: <b>NT$ ${avg.toLocaleString()} / 錢</b></div>`;
@@ -2329,7 +2387,6 @@ function renderDailyDOM() {
       `;
   });
   
-  // ★ 改為按鈕點擊載入，一次 45 筆
   if (isVip && dailyGroupedDates.length > dailyRenderLimit) {
       html += `<button class="btn-load-more" onclick="loadMoreDaily()">往下展開更多 (${dailyGroupedDates.length - dailyRenderLimit} 筆未顯示)</button>`;
   } else if (isVip) {
@@ -2339,7 +2396,6 @@ function renderDailyDOM() {
   el.innerHTML = html;
 }
 
-// ★ 按鈕載入的函式
 function loadMoreDaily() {
   dailyRenderLimit += 45;
   renderDailyDOM();
@@ -2521,7 +2577,7 @@ async function executeNukeDatabase() {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.20\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.21\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
