@@ -263,8 +263,16 @@
     .vip-price-input { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 10px; color: var(--gold-light); font-size: 16px; font-weight:bold; text-align: center; margin-bottom: 8px; outline: none; }
     .vip-price-input:focus { border-color: var(--gold); }
     .vip-total-val { font-size: 22px; font-weight: bold; color: var(--green); text-align: center; }
-    .vip-sort-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-    .btn-sort { flex: 1; min-width: 45%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 8px; padding: 10px; color: var(--text2); font-size: 13px; cursor: pointer; text-align: center; transition: all 0.2s; white-space: nowrap; }
+    
+    /* VIP Filter & Sort */
+    .vip-controls-box { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 14px; }
+    .vip-controls-label { font-size: 12px; color: var(--text3); margin-bottom: 8px; font-weight: bold; }
+    .vip-filter-bar { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+    .btn-vip-filter { flex: 1; min-width: 30%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 8px; padding: 8px; color: var(--text2); font-size: 13px; cursor: pointer; text-align: center; transition: all 0.2s; white-space: nowrap; }
+    .btn-vip-filter.active { background: #1c1600; border-color: var(--gold); color: var(--gold-light); font-weight: bold; }
+    
+    .vip-sort-bar { display: flex; gap: 6px; flex-wrap: wrap; border-top: 0.5px solid var(--border); padding-top: 12px; }
+    .btn-sort { flex: 1; min-width: 45%; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 8px; padding: 8px; color: var(--text2); font-size: 13px; cursor: pointer; text-align: center; transition: all 0.2s; white-space: nowrap; }
     .btn-sort.active { background: #1c1600; border-color: var(--gold); color: var(--gold-light); font-weight: bold; }
     
     .vip-list { display: flex; flex-direction: column; gap: 10px; }
@@ -543,10 +551,10 @@
         <div class="form-group">
           <label class="form-label">重量輸入（四單位即時連動）</label>
           <div class="weight-grid">
-            <div class="wf" id="wf-gram"><div class="wf-label">公克 (g)</div><input class="wf-input" type="number" inputmode="decimal" id="w-g" placeholder="0.000" oninput="syncW('g')"/></div>
-            <div class="wf hl" id="wf-mace"><div class="wf-label">台錢 ★</div><input class="wf-input" type="number" inputmode="decimal" id="w-m" placeholder="0.000" oninput="syncW('m')"/></div>
-            <div class="wf" id="wf-tael"><div class="wf-label">台兩</div><input class="wf-input" type="number" inputmode="decimal" id="w-t" placeholder="0.0000" oninput="syncW('t')"/></div>
-            <div class="wf" id="wf-oz"><div class="wf-label">盎司 (oz)</div><input class="wf-input" type="number" inputmode="decimal" id="w-o" placeholder="0.0000" oninput="syncW('o')"/></div>
+            <div class="wf" id="wf-gram"><div class="wf-label">公克 (g)</div><input class="wf-input" type="number" inputmode="decimal" id="w-g" placeholder="0.000" oninput="syncW('g'); calcAmount();"/></div>
+            <div class="wf hl" id="wf-mace"><div class="wf-label">台錢 ★</div><input class="wf-input" type="number" inputmode="decimal" id="w-m" placeholder="0.000" oninput="syncW('m'); calcAmount();"/></div>
+            <div class="wf" id="wf-tael"><div class="wf-label">台兩</div><input class="wf-input" type="number" inputmode="decimal" id="w-t" placeholder="0.0000" oninput="syncW('t'); calcAmount();"/></div>
+            <div class="wf" id="wf-oz"><div class="wf-label">盎司 (oz)</div><input class="wf-input" type="number" inputmode="decimal" id="w-o" placeholder="0.0000" oninput="syncW('o'); calcAmount();"/></div>
           </div>
         </div>
         <div class="form-group">
@@ -556,8 +564,11 @@
             <div class="dir-opt out-active" id="cd-out" onclick="setCDir('支出')">▼ 支出</div>
           </div>
         </div>
-        <div class="form-group"><label class="form-label">收付金額（NT$）</label><input type="number" inputmode="numeric" class="input-field" id="f-amount" placeholder="0"/></div>
-        <div class="form-group"><label class="form-label">參考牌價（選填）</label><input type="number" inputmode="numeric" class="input-field" id="f-price" placeholder="當時金價（元/台錢）"/></div>
+        
+        <div class="form-group"><label class="form-label">參考牌價（填入自動計算收付）</label><input type="number" inputmode="numeric" class="input-field" id="f-price" placeholder="當時金價（元/台錢）" oninput="calcAmount()"/></div>
+        <div class="form-group"><label class="form-label">工錢（選填，自動加總）</label><input type="number" inputmode="numeric" class="input-field" id="f-wage" placeholder="0" oninput="calcAmount()"/></div>
+        <div class="form-group"><label class="form-label">收付金額（NT$）</label><input type="number" inputmode="numeric" class="input-field" id="f-amount" placeholder="0" oninput="clearAutoCalc()"/></div>
+        
         <div class="form-group"><label class="form-label">交易對象（選填）</label><input type="text" class="input-field" id="f-target" placeholder="銀行、客戶名稱…"/></div>
         <div class="form-group"><label class="form-label">備註（選填）</label><input type="text" class="input-field" id="f-note" placeholder="備註說明…"/></div>
         <div class="form-error" id="f-err"></div>
@@ -640,7 +651,7 @@
 
         <div class="menu-item" onclick="forceUpdateApp()">
           <div class="mi-left"><div class="mi-icon" style="background:#0d1a2b; color:#4ea8de;">🚀</div><div class="mi-label" style="color:#4ea8de;">檢查並強制更新系統</div></div>
-          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.24</div>
+          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.25</div>
         </div>
 
         <div class="menu-item" onclick="prepareExport()">
@@ -692,12 +703,19 @@
           <div class="vip-total-val" id="vip-total-value">NT$ 0</div>
           <div style="font-size:12px; color:var(--text3); text-align:center; margin-top:4px;">(自動乘上所有快取計算之總庫存重)</div>
         </div>
-
-        <div class="vip-sort-bar">
-          <div class="btn-sort active" id="sort-btn-target" onclick="renderVipInventory('target')">依交易對象排序</div>
-          <div class="btn-sort" id="sort-btn-weight" onclick="renderVipInventory('weight')">依淨重量排序</div>
-          <div class="btn-sort" id="sort-btn-in" onclick="renderVipInventory('in')">依一般進貨排序</div>
-          <div class="btn-sort" id="sort-btn-out" onclick="renderVipInventory('out')">依一般銷售排序</div>
+        
+        <div class="vip-controls-box">
+          <div class="vip-controls-label">1. 篩選交易類別：</div>
+          <div class="vip-filter-bar">
+            <div class="btn-vip-filter active" id="vfilt-all" onclick="renderVipInventory(vipSortMode, 'all')">全部紀錄</div>
+            <div class="btn-vip-filter" id="vfilt-in" onclick="renderVipInventory(vipSortMode, 'in')">一般進貨</div>
+            <div class="btn-vip-filter" id="vfilt-out" onclick="renderVipInventory(vipSortMode, 'out')">一般銷售</div>
+          </div>
+          <div class="vip-controls-label">2. 選擇排序方式：</div>
+          <div class="vip-sort-bar">
+            <div class="btn-sort active" id="sort-btn-target" onclick="renderVipInventory('target', vipFilterMode)">依交易對象</div>
+            <div class="btn-sort" id="sort-btn-weight" onclick="renderVipInventory('weight', vipFilterMode)">依淨重排行</div>
+          </div>
         </div>
 
         <div class="vip-list" id="vip-inventory-list">
@@ -765,7 +783,7 @@
 <div id="toast"></div>
 <script>
 // ★ UI 顯示版本號 (更新版號)
-const APP_VERSION = 'v1.24';
+const APP_VERSION = 'v1.25';
 // ★ 快取結構版本號
 const CACHE_SCHEMA_VERSION = 'v4'; 
 
@@ -1325,7 +1343,9 @@ function toggleVisibility(type, iconEl) {
     }
 }
 
+// ★ VIP 品項彙整：多重過濾與排序機制
 let vipSortMode = 'target'; 
+let vipFilterMode = 'all';
 
 function openVipInventory() {
     goScreen('vip-inventory');
@@ -1335,77 +1355,70 @@ function openVipInventory() {
         document.getElementById('vip-market-price').value = savedPrice;
     }
     
-    renderVipInventory(vipSortMode);
+    renderVipInventory(vipSortMode, vipFilterMode);
 }
 
-// ★ VIP 品項彙整：加入一般進出貨的排行與計算邏輯
-function renderVipInventory(mode) {
-    vipSortMode = mode;
-    document.getElementById('sort-btn-target').classList.toggle('active', mode === 'target');
-    document.getElementById('sort-btn-weight').classList.toggle('active', mode === 'weight');
-    document.getElementById('sort-btn-in').classList.toggle('active', mode === 'in');
-    document.getElementById('sort-btn-out').classList.toggle('active', mode === 'out');
+function renderVipInventory(sortMode = vipSortMode, filterMode = vipFilterMode) {
+    vipSortMode = sortMode;
+    vipFilterMode = filterMode;
+    
+    document.getElementById('sort-btn-target').classList.toggle('active', sortMode === 'target');
+    document.getElementById('sort-btn-weight').classList.toggle('active', sortMode === 'weight');
+    
+    document.getElementById('vfilt-all').classList.toggle('active', filterMode === 'all');
+    document.getElementById('vfilt-in').classList.toggle('active', filterMode === 'in');
+    document.getElementById('vfilt-out').classList.toggle('active', filterMode === 'out');
     
     const listEl = document.getElementById('vip-inventory-list');
     listEl.innerHTML = '<div class="loading-dots" style="margin:20px auto;"><span></span><span></span><span></span></div>';
 
     setTimeout(() => {
-        const index = getAllCachedIndices();
+        let index = getAllCachedIndices();
         let html = '';
 
         if (index.length === 0) {
             listEl.innerHTML = '<div class="empty-state"><div class="empty-text">尚無快取資料可供彙整</div></div>';
             return;
         }
+        
+        // 1. 執行第一層過濾 (過濾交易類別)
+        if (filterMode === 'in') index = index.filter(tx => tx.type === '一般進貨');
+        if (filterMode === 'out') index = index.filter(tx => tx.type === '一般銷售');
 
-        if (mode === 'target' || mode === 'in' || mode === 'out') {
+        if (index.length === 0) {
+            listEl.innerHTML = '<div class="empty-state"><div class="empty-text">此篩選條件下無符合紀錄</div></div>';
+            return;
+        }
+
+        // 2. 執行第二層排序與分群
+        if (sortMode === 'target') {
             const groups = {};
             index.forEach(tx => {
                 const tgt = tx.target || '未指定對象';
-                if (!groups[tgt]) groups[tgt] = { txs: [], netW: 0, netC: 0, inW: 0, outW: 0 };
+                if (!groups[tgt]) groups[tgt] = { txs: [], netW: 0, netC: 0 };
                 groups[tgt].txs.push(tx);
                 
                 const w = (tx.wDir === '入庫' ? 1 : -1) * (tx.mace || 0);
                 const c = (tx.cDir === '收入' ? 1 : -1) * (tx.amount || 0);
                 groups[tgt].netW += w;
                 groups[tgt].netC += c;
-
-                if (tx.type === '一般進貨') groups[tgt].inW += (tx.mace || 0);
-                if (tx.type === '一般銷售') groups[tgt].outW += (tx.mace || 0);
             });
 
-            // 若選擇進貨或銷售排序，過濾掉該項目為0的對象
-            const sortedTargets = Object.keys(groups).filter(tgt => {
-                if (mode === 'in' && groups[tgt].inW === 0) return false;
-                if (mode === 'out' && groups[tgt].outW === 0) return false;
-                return true;
-            });
-
-            if (mode === 'target') {
-                sortedTargets.sort();
-            } else if (mode === 'in') {
-                sortedTargets.sort((a, b) => groups[b].inW - groups[a].inW);
-            } else if (mode === 'out') {
-                sortedTargets.sort((a, b) => groups[b].outW - groups[a].outW);
-            }
+            const sortedTargets = Object.keys(groups).sort();
             
-            if (sortedTargets.length === 0) {
-                html = `<div class="empty-state"><div class="empty-text">無符合的交易對象紀錄</div></div>`;
-            } else {
-                sortedTargets.forEach(tgt => {
-                    let extraInfo = '';
-                    if (mode === 'in') extraInfo = ` <span style="color:var(--green); font-size:13px;">(進貨: ${groups[tgt].inW.toFixed(3)})</span>`;
-                    if (mode === 'out') extraInfo = ` <span style="color:var(--red); font-size:13px;">(銷售: ${groups[tgt].outW.toFixed(3)})</span>`;
-
-                    html += `<div class="vip-group-header">${tgt}${extraInfo} <span style="font-size:12px; font-weight:normal; color:var(--text3);">(淨重: ${groups[tgt].netW.toFixed(3)} 錢)</span></div>`;
-                    
-                    groups[tgt].txs.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(tx => {
-                        html += buildVipTxCard(tx);
-                    });
+            sortedTargets.forEach(tgt => {
+                let infoStr = `(該區間淨重: ${groups[tgt].netW.toFixed(3)} 錢)`;
+                if(filterMode === 'in') infoStr = `<span style="color:var(--green);">(此條件總進貨: ${groups[tgt].netW.toFixed(3)})</span>`;
+                if(filterMode === 'out') infoStr = `<span style="color:var(--red);">(此條件總銷售: ${Math.abs(groups[tgt].netW).toFixed(3)})</span>`;
+                
+                html += `<div class="vip-group-header">${tgt} <span style="font-size:12px; font-weight:normal; color:var(--text3);">${infoStr}</span></div>`;
+                
+                groups[tgt].txs.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(tx => {
+                    html += buildVipTxCard(tx);
                 });
-            }
+            });
 
-        } else if (mode === 'weight') {
+        } else if (sortMode === 'weight') {
             const sortedByW = [...index].sort((a, b) => (b.mace || 0) - (a.mace || 0));
             sortedByW.forEach(tx => {
                 html += buildVipTxCard(tx);
@@ -1447,6 +1460,7 @@ function calcVipTotal() {
 }
 
 
+// ★ 核心修復：強制等待資料完全就緒，才渲染 UI
 auth.onAuthStateChanged(async (u) => {
   const loadEl = document.getElementById('loading');
   const loadTextEl = document.getElementById('loading-text');
@@ -1478,6 +1492,7 @@ auth.onAuthStateChanged(async (u) => {
     }
     applyAdminUI(); 
 
+    // ★ 核心邏輯：先檢查快取，如果快取不符或有更新，完全鎖死畫面等待下載完畢
     const localSchema = localStorage.getItem('cache_schema');
     try {
         if (localSchema !== CACHE_SCHEMA_VERSION) {
@@ -1513,9 +1528,10 @@ auth.onAuthStateChanged(async (u) => {
         }
     } catch(err) {
         if (loadTextEl) loadTextEl.textContent = '網路異常，無法載入資料，請重整頁面。';
-        return; 
+        return; // 發生嚴重錯誤，直接終止，不要解除 Loading 畫面
     }
 
+    // 只有當上面的 await 全部順利執行完畢，確保本機有資料後，才解除 Loading
     loadEl.style.display = 'none';
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('auth-screen').classList.remove('active');
@@ -1632,15 +1648,15 @@ function goBackToList() { goScreen(lastScreen); }
 function showInstructions() {
   alert('【貴金屬庫存管理系統 - 操作指南】\n\n' +
         '一、 核心功能\n' +
-        '📦 交易建檔：內建「邏輯防呆」，自動鎖定正確的進出庫方向。\n' +
+        '📦 交易建檔：支援進銷回收等紀錄，內建自動計算功能（牌價×重量＋工錢）。\n' +
         '⚖️ 智慧換算：公克/台錢/台兩/盎司四單位即時連動。\n' +
         '📊 歷史日結：透過快速選單可以精準定位歷史每日結餘。\n\n' +
         '二、 初始與補登\n' +
         '請選「期初設定」建立起始庫存。若補登舊紀錄，請直接修改「交易時間」，系統將自動同步所有結餘。\n\n' +
-        '三、 雙軌查詢機制 (效能升級)\n' +
-        '首頁永遠顯示「最新 25 筆」交易；紀錄頁可透過下拉選單精準查詢「特定月份」以減少流量消耗。\n\n' +
+        '三、 VIP進階功能與多重篩選\n' +
+        'VIP 用戶可解鎖「各品項彙整」與「匯出備份」。\n品項彙整內建多重篩選器（例如：可篩選「一般進貨」再點「依對象排序」快速對帳）。\n\n' +
         '四、 VIP與批次管理限制\n' +
-        '一般使用者每日新增上限 200 筆，刪除 100 筆。升級VIP即可享受所有進階資料匯出、全歷史報表與彙整功能。');
+        '一般使用者每日新增上限 200 筆，刪除 100 筆。VIP 功能每日匯出/匯入上限皆為 2 次。');
 }
 
 function setStockAlert() {
@@ -1661,6 +1677,7 @@ function setStockAlert() {
 
 function txCol() { return db.collection('users').doc(user.uid).collection('transactions'); }
 
+// ★ 背景監聽機制：發現更新時，以 Toast 提示並偷偷同步
 function subTx() {
   if (unsubStats) unsubStats();
 
@@ -1746,6 +1763,7 @@ function closeExportModal() {
     document.getElementById('export-modal').style.display = 'none';
 }
 
+// ★ 教科書級匯出機制：歷史回溯並產生符合需求的 14 欄位報表
 async function executeExport() {
     closeExportModal();
     toast('正在準備匯出資料，請稍候...', 'info');
@@ -1755,23 +1773,62 @@ async function executeExport() {
             toast('無資料可匯出', 'error');
             return;
         }
+
+        // 為了計算準確的結餘，必須將資料從「最舊」排到「最新」
+        allData.sort((a,b) => new Date(a.date) - new Date(b.date));
         
-        let wsData = [['交易日期', '交易類別', '重量動向', '台錢', '收付動向', '金額(NT$)', '交易對象', '備註']];
-        allData.forEach(tx => {
+        let wsData = [['交易序號', '交易日期', '交易類別', '出庫/入庫(台錢)', '出庫重量(台錢)', '入庫重量(台錢)', '庫存總重(台錢)', '出庫金額', '入庫金額', '結餘金額', '參考牌價', '交易對象', '備註', '狀態']];
+        
+        let currentWeight = 0;
+        let currentBalance = 0;
+
+        allData.forEach((tx, index) => {
+            const isIn = tx.wDir === '入庫';
+            const mace = tx.mace || 0;
+            const amount = tx.amount || 0;
+            const isIncome = tx.cDir === '收入';
+
+            // 累加目前為止的總重與結餘
+            currentWeight += (isIn ? mace : -mace);
+            currentBalance += (isIncome ? amount : -amount);
+
+            // 依據出入庫拆分重量與金額欄位 (不顯示負數，只放入對應的欄位)
+            const inWeight = isIn ? mace : 0;
+            const outWeight = !isIn ? mace : 0;
+            const inAmount = isIncome ? amount : 0;
+            const outAmount = !isIncome ? amount : 0;
+
+            let status = '正常';
+            if (tx.isEdited) status = '已修改';
+            else if (tx.isBackdated) status = '補登';
+
             wsData.push([
-                tx.date ? tx.date.slice(0, 16).replace('T', ' ') : '',
+                index + 1, // 交易序號
+                tx.date ? tx.date.slice(0, 16).replace('T', ' ') : '', // 交易日期
                 tx.type || '',
                 tx.wDir || '',
-                tx.mace || 0,
-                tx.cDir || '',
-                tx.amount || 0,
+                outWeight,
+                inWeight,
+                parseFloat(currentWeight.toFixed(3)), // 庫存總重
+                outAmount,
+                inAmount,
+                currentBalance, // 結餘金額
+                tx.price || 0,
                 tx.target || '',
-                tx.note || ''
+                tx.note || '',
+                status
             ]);
         });
         
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+        // 自動調整欄寬
+        const colWidths = wsData[0].map((_, colIndex) => {
+            return { wch: Math.max(...wsData.map(row => (row[colIndex] ? row[colIndex].toString().length : 0))) + 2 };
+        });
+        ws['!cols'] = colWidths;
+
         XLSX.utils.book_append_sheet(wb, ws, "庫存紀錄");
         const today = new Date().toISOString().slice(0, 10);
         XLSX.writeFile(wb, `貴金屬庫存紀錄_${today}.xlsx`);
@@ -1812,7 +1869,7 @@ async function doImport(event) {
             
             if (jsonData.length <= 1) { toast('檔案無有效資料', 'error'); return; }
             
-            if (!confirm(`偵測到 ${jsonData.length - 1} 筆資料，即將進行匯入。\n(請確保為系統匯出的格式)`)) return;
+            if (!confirm(`偵測到 ${jsonData.length - 1} 筆資料，即將進行匯入。\n(請確保為系統舊版匯出的基本格式，新版14欄位格式暫不支援完整匯入)`)) return;
             
             document.getElementById('loading').style.display = 'flex';
             document.getElementById('loading-text').textContent = '資料大量寫入中，請勿關閉畫面...';
@@ -1977,7 +2034,7 @@ async function doSubmit() {
     oz: mace > 0 ? +(mace / 8.294).toFixed(4) : 0,
     cDir: amount > 0 ? fState.cDir : '',
     amount: amount,
-    price: parseInt(document.getElementById('f-price').value) || 0,
+    price: parseFloat(document.getElementById('f-price').value) || 0,
     target: document.getElementById('f-target').value.trim(),
     note: document.getElementById('f-note').value.trim(),
   };
@@ -2016,7 +2073,7 @@ async function doSubmit() {
     
     if (lastScreen === 'vip-inventory') {
         goScreen('vip-inventory');
-        renderVipInventory(vipSortMode);
+        renderVipInventory(vipSortMode, vipFilterMode);
     } else {
         goScreen('history'); 
     }
@@ -2049,7 +2106,7 @@ async function deleteTx(id, backToList = false) {
     }
     
     if (backToList) goBackToList();
-    if (lastScreen === 'vip-inventory') renderVipInventory(vipSortMode);
+    if (lastScreen === 'vip-inventory') renderVipInventory(vipSortMode, vipFilterMode);
   } catch(err) {
     toast('刪除失敗：' + err.message, 'error');
   }
@@ -2528,7 +2585,7 @@ function clearForm() {
   document.getElementById('form-top-title').textContent = '新增交易';
   document.getElementById('submit-btn').textContent = '確認寫入紀錄';
 
-  ['w-g','w-m','w-t','w-o','f-amount','f-price','f-target','f-note'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+  ['w-g','w-m','w-t','w-o','f-amount','f-price','f-wage','f-target','f-note'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
   document.getElementById('f-datetime').value = getNowLocal(); 
   document.getElementById('f-err').textContent = '';
   
@@ -2573,6 +2630,22 @@ function calcValue() {
   const price = parseFloat(document.getElementById('cv-price').value) || 0;
   const total = Math.round(mace * price); 
   document.getElementById('cv-total').textContent = 'NT$ ' + total.toLocaleString();
+}
+
+// ★ 全新加入的智能收付計算器
+function calcAmount() {
+    const mace = parseFloat(document.getElementById('w-m').value) || 0;
+    const price = parseFloat(document.getElementById('f-price').value) || 0;
+    const wage = parseFloat(document.getElementById('f-wage').value) || 0;
+    
+    if (price > 0 || wage > 0) {
+        const total = Math.round((mace * price) + wage);
+        document.getElementById('f-amount').value = total;
+    }
+}
+
+function clearAutoCalc() {
+    // 當使用者手動修改「收付金額」時，我們不需要清空計算公式，只讓他覆蓋值即可。
 }
 
 function closeNukeModal() {
@@ -2645,7 +2718,7 @@ async function executeNukeDatabase() {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.24\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.25\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
