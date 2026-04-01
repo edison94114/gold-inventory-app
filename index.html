@@ -651,7 +651,7 @@
 
         <div class="menu-item" onclick="forceUpdateApp()">
           <div class="mi-left"><div class="mi-icon" style="background:#0d1a2b; color:#4ea8de;">🚀</div><div class="mi-label" style="color:#4ea8de;">檢查並強制更新系統</div></div>
-          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.26</div>
+          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.27</div>
         </div>
 
         <div class="menu-item" onclick="prepareExport()">
@@ -715,6 +715,8 @@
           <div class="vip-sort-bar">
             <div class="btn-sort active" id="sort-btn-target" onclick="renderVipInventory('target', vipFilterMode)">依交易對象</div>
             <div class="btn-sort" id="sort-btn-weight" onclick="renderVipInventory('weight', vipFilterMode)">依淨重排行</div>
+            <div class="btn-sort" id="sort-btn-in" onclick="renderVipInventory('in', vipFilterMode)">依一般進貨排序</div>
+            <div class="btn-sort" id="sort-btn-out" onclick="renderVipInventory('out', vipFilterMode)">依一般銷售排序</div>
           </div>
         </div>
 
@@ -783,8 +785,8 @@
 <div id="toast"></div>
 <script>
 // ★ UI 顯示版本號 (更新版號)
-const APP_VERSION = 'v1.26';
-// ★ 快取結構版本號 (無需更新，因為新邏輯都在記憶體中處理，不影響快取)
+const APP_VERSION = 'v1.27';
+// ★ 快取結構版本號 (無需更新)
 const CACHE_SCHEMA_VERSION = 'v4'; 
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -1343,7 +1345,6 @@ function toggleVisibility(type, iconEl) {
     }
 }
 
-// ★ VIP 品項彙整：多重過濾與排序機制
 let vipSortMode = 'target'; 
 let vipFilterMode = 'all';
 
@@ -1725,7 +1726,6 @@ function jumpToInitial() {
     }
 }
 
-// ★ 備份提醒機制：延遲 15 天並可手動關閉
 function checkBackupReminder() {
   const lastBackup = localStorage.getItem('lastBackupDate');
   const now = Date.now();
@@ -1759,7 +1759,6 @@ function closeExportModal() {
     document.getElementById('export-modal').style.display = 'none';
 }
 
-// ★ 教科書級匯出機制：歷史回溯並產生符合需求的 14 欄位報表
 async function executeExport() {
     closeExportModal();
     toast('正在準備匯出資料，請稍候...', 'info');
@@ -1770,7 +1769,6 @@ async function executeExport() {
             return;
         }
 
-        // 為了計算準確的結餘，必須將資料從「最舊」排到「最新」
         allData.sort((a,b) => new Date(a.date) - new Date(b.date));
         
         let wsData = [['交易序號', '交易日期', '交易類別', '出庫/入庫(台錢)', '出庫重量(台錢)', '入庫重量(台錢)', '庫存總重(台錢)', '出庫金額', '入庫金額', '結餘金額', '參考牌價', '交易對象', '備註', '狀態']];
@@ -1784,11 +1782,9 @@ async function executeExport() {
             const amount = tx.amount || 0;
             const isIncome = tx.cDir === '收入';
 
-            // 累加目前為止的總重與結餘
             currentWeight += (isIn ? mace : -mace);
             currentBalance += (isIncome ? amount : -amount);
 
-            // 依據出入庫拆分重量與金額欄位 (不顯示負數，只放入對應的欄位)
             const inWeight = isIn ? mace : 0;
             const outWeight = !isIn ? mace : 0;
             const inAmount = isIncome ? amount : 0;
@@ -1819,7 +1815,6 @@ async function executeExport() {
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-        // 自動調整欄寬
         const colWidths = wsData[0].map((_, colIndex) => {
             return { wch: Math.max(...wsData.map(row => (row[colIndex] ? row[colIndex].toString().length : 0))) + 2 };
         });
@@ -1849,7 +1844,6 @@ function checkImportLimit() {
     document.getElementById('import-file').click();
 }
 
-// ★ 全新：支援新舊格式的智慧匯入機制
 async function doImport(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -1866,7 +1860,6 @@ async function doImport(event) {
             
             if (jsonData.length <= 1) { toast('檔案無有效資料', 'error'); return; }
             
-            // 自動判斷版本：若第一欄為「交易序號」且欄數夠多，則是新版
             const headers = jsonData[0];
             const isNewFormat = headers[0] === '交易序號' && headers.length >= 13;
             
@@ -1904,7 +1897,6 @@ async function doImport(event) {
                     isEdited = (status === '已修改');
                     isBackdated = (status === '補登');
                 } else {
-                    // 舊版 8 欄位邏輯
                     dateStr = row[0] || new Date().toISOString();
                     type = row[1] || '一般進貨';
                     wDir = row[2] || '';
@@ -2246,6 +2238,7 @@ function editTx(id) {
   syncW('m'); 
   document.getElementById('f-amount').value = tx.amount || '';
   document.getElementById('f-price').value = tx.price || '';
+  document.getElementById('f-wage').value = tx.wage || ''; // 未來擴充保留
   document.getElementById('f-target').value = tx.target || '';
   document.getElementById('f-note').value = tx.note || '';
 
@@ -2665,12 +2658,17 @@ function calcValue() {
   document.getElementById('cv-total').textContent = 'NT$ ' + total.toLocaleString();
 }
 
+// ★ 全新加入的智能收付計算器 (v1.27 修復：允許 0 元也能觸發計算)
 function calcAmount() {
     const mace = parseFloat(document.getElementById('w-m').value) || 0;
-    const price = parseFloat(document.getElementById('f-price').value) || 0;
-    const wage = parseFloat(document.getElementById('f-wage').value) || 0;
+    const priceStr = document.getElementById('f-price').value;
+    const wageStr = document.getElementById('f-wage').value;
     
-    if (price > 0 || wage > 0) {
+    const price = parseFloat(priceStr) || 0;
+    const wage = parseFloat(wageStr) || 0;
+    
+    // 只要牌價或工錢欄位「不是完全空白」，就觸發自動計算 (即使輸入 0 也照算)
+    if (priceStr !== '' || wageStr !== '') {
         const total = Math.round((mace * price) + wage);
         document.getElementById('f-amount').value = total;
     }
@@ -2750,7 +2748,7 @@ async function executeNukeDatabase() {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.26\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.27\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
