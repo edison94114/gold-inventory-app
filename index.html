@@ -651,7 +651,7 @@
 
         <div class="menu-item" onclick="forceUpdateApp()">
           <div class="mi-left"><div class="mi-icon" style="background:#0d1a2b; color:#4ea8de;">🚀</div><div class="mi-label" style="color:#4ea8de;">檢查並強制更新系統</div></div>
-          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.27</div>
+          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.28</div>
         </div>
 
         <div class="menu-item" onclick="prepareExport()">
@@ -714,9 +714,7 @@
           <div class="vip-controls-label">2. 選擇排序方式：</div>
           <div class="vip-sort-bar">
             <div class="btn-sort active" id="sort-btn-target" onclick="renderVipInventory('target', vipFilterMode)">依交易對象</div>
-            <div class="btn-sort" id="sort-btn-weight" onclick="renderVipInventory('weight', vipFilterMode)">依淨重排行</div>
-            <div class="btn-sort" id="sort-btn-in" onclick="renderVipInventory('in', vipFilterMode)">依一般進貨排序</div>
-            <div class="btn-sort" id="sort-btn-out" onclick="renderVipInventory('out', vipFilterMode)">依一般銷售排序</div>
+            <div class="btn-sort" id="sort-btn-weight" onclick="renderVipInventory('weight', vipFilterMode)">依淨重排序</div>
           </div>
         </div>
 
@@ -785,8 +783,8 @@
 <div id="toast"></div>
 <script>
 // ★ UI 顯示版本號 (更新版號)
-const APP_VERSION = 'v1.27';
-// ★ 快取結構版本號 (無需更新)
+const APP_VERSION = 'v1.28';
+// ★ 快取結構版本號 (無需更新，因為新邏輯都在記憶體中處理，不影響快取)
 const CACHE_SCHEMA_VERSION = 'v4'; 
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -1345,6 +1343,7 @@ function toggleVisibility(type, iconEl) {
     }
 }
 
+// ★ VIP 品項彙整：雙重過濾與群組排序機制
 let vipSortMode = 'target'; 
 let vipFilterMode = 'all';
 
@@ -1405,7 +1404,8 @@ function renderVipInventory(sortMode = vipSortMode, filterMode = vipFilterMode) 
                 groups[tgt].netC += c;
             });
 
-            const sortedTargets = Object.keys(groups).sort();
+            // ★ 核心升級：依交易對象分群後，將各個群組「依照淨重由高到低排行」！
+            const sortedTargets = Object.keys(groups).sort((a, b) => groups[b].netW - groups[a].netW);
             
             sortedTargets.forEach(tgt => {
                 let infoStr = `(該區間淨重: ${groups[tgt].netW.toFixed(3)} 錢)`;
@@ -1420,6 +1420,7 @@ function renderVipInventory(sortMode = vipSortMode, filterMode = vipFilterMode) 
             });
 
         } else if (sortMode === 'weight') {
+            // 純粹的單筆交易依重量排序
             const sortedByW = [...index].sort((a, b) => (b.mace || 0) - (a.mace || 0));
             sortedByW.forEach(tx => {
                 html += buildVipTxCard(tx);
@@ -2658,17 +2659,18 @@ function calcValue() {
   document.getElementById('cv-total').textContent = 'NT$ ' + total.toLocaleString();
 }
 
-// ★ 全新加入的智能收付計算器 (v1.27 修復：允許 0 元也能觸發計算)
+// ★ 全新加入的智能收付計算器 (v1.28 修復：只要任一欄位有輸入，無論 0 或空值都能完美運算)
 function calcAmount() {
-    const mace = parseFloat(document.getElementById('w-m').value) || 0;
+    const maceStr = document.getElementById('w-m').value;
     const priceStr = document.getElementById('f-price').value;
     const wageStr = document.getElementById('f-wage').value;
     
+    const mace = parseFloat(maceStr) || 0;
     const price = parseFloat(priceStr) || 0;
     const wage = parseFloat(wageStr) || 0;
     
-    // 只要牌價或工錢欄位「不是完全空白」，就觸發自動計算 (即使輸入 0 也照算)
-    if (priceStr !== '' || wageStr !== '') {
+    // 只要有任何一個欄位被輸入過，就觸發覆蓋
+    if (maceStr !== '' || priceStr !== '' || wageStr !== '') {
         const total = Math.round((mace * price) + wage);
         document.getElementById('f-amount').value = total;
     }
@@ -2748,7 +2750,7 @@ async function executeNukeDatabase() {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.27\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.28\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
