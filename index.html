@@ -651,7 +651,7 @@
 
         <div class="menu-item" onclick="forceUpdateApp()">
           <div class="mi-left"><div class="mi-icon" style="background:#0d1a2b; color:#4ea8de;">🚀</div><div class="mi-label" style="color:#4ea8de;">檢查並強制更新系統</div></div>
-          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.25</div>
+          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.26</div>
         </div>
 
         <div class="menu-item" onclick="prepareExport()">
@@ -783,8 +783,8 @@
 <div id="toast"></div>
 <script>
 // ★ UI 顯示版本號 (更新版號)
-const APP_VERSION = 'v1.25';
-// ★ 快取結構版本號
+const APP_VERSION = 'v1.26';
+// ★ 快取結構版本號 (無需更新，因為新邏輯都在記憶體中處理，不影響快取)
 const CACHE_SCHEMA_VERSION = 'v4'; 
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -1343,7 +1343,6 @@ function toggleVisibility(type, iconEl) {
     }
 }
 
-// ★ VIP 品項彙整：多重過濾與排序機制
 let vipSortMode = 'target'; 
 let vipFilterMode = 'all';
 
@@ -1460,7 +1459,6 @@ function calcVipTotal() {
 }
 
 
-// ★ 核心修復：強制等待資料完全就緒，才渲染 UI
 auth.onAuthStateChanged(async (u) => {
   const loadEl = document.getElementById('loading');
   const loadTextEl = document.getElementById('loading-text');
@@ -1492,7 +1490,6 @@ auth.onAuthStateChanged(async (u) => {
     }
     applyAdminUI(); 
 
-    // ★ 核心邏輯：先檢查快取，如果快取不符或有更新，完全鎖死畫面等待下載完畢
     const localSchema = localStorage.getItem('cache_schema');
     try {
         if (localSchema !== CACHE_SCHEMA_VERSION) {
@@ -1528,10 +1525,9 @@ auth.onAuthStateChanged(async (u) => {
         }
     } catch(err) {
         if (loadTextEl) loadTextEl.textContent = '網路異常，無法載入資料，請重整頁面。';
-        return; // 發生嚴重錯誤，直接終止，不要解除 Loading 畫面
+        return; 
     }
 
-    // 只有當上面的 await 全部順利執行完畢，確保本機有資料後，才解除 Loading
     loadEl.style.display = 'none';
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('auth-screen').classList.remove('active');
@@ -1655,8 +1651,8 @@ function showInstructions() {
         '請選「期初設定」建立起始庫存。若補登舊紀錄，請直接修改「交易時間」，系統將自動同步所有結餘。\n\n' +
         '三、 VIP進階功能與多重篩選\n' +
         'VIP 用戶可解鎖「各品項彙整」與「匯出備份」。\n品項彙整內建多重篩選器（例如：可篩選「一般進貨」再點「依對象排序」快速對帳）。\n\n' +
-        '四、 VIP與批次管理限制\n' +
-        '一般使用者每日新增上限 200 筆，刪除 100 筆。VIP 功能每日匯出/匯入上限皆為 2 次。');
+        '四、 匯出與匯入\n' +
+        '系統提供專業級 14 欄位 Excel 匯出功能。而為了向下相容，系統依然支援舊版 8 欄位格式的匯入還原。');
 }
 
 function setStockAlert() {
@@ -1677,7 +1673,6 @@ function setStockAlert() {
 
 function txCol() { return db.collection('users').doc(user.uid).collection('transactions'); }
 
-// ★ 背景監聽機制：發現更新時，以 Toast 提示並偷偷同步
 function subTx() {
   if (unsubStats) unsubStats();
 
@@ -1729,7 +1724,6 @@ function jumpToInitial() {
     }
 }
 
-// ★ 備份提醒機制：延遲 15 天並可手動關閉
 function checkBackupReminder() {
   const lastBackup = localStorage.getItem('lastBackupDate');
   const now = Date.now();
@@ -1774,7 +1768,6 @@ async function executeExport() {
             return;
         }
 
-        // 為了計算準確的結餘，必須將資料從「最舊」排到「最新」
         allData.sort((a,b) => new Date(a.date) - new Date(b.date));
         
         let wsData = [['交易序號', '交易日期', '交易類別', '出庫/入庫(台錢)', '出庫重量(台錢)', '入庫重量(台錢)', '庫存總重(台錢)', '出庫金額', '入庫金額', '結餘金額', '參考牌價', '交易對象', '備註', '狀態']];
@@ -1788,11 +1781,9 @@ async function executeExport() {
             const amount = tx.amount || 0;
             const isIncome = tx.cDir === '收入';
 
-            // 累加目前為止的總重與結餘
             currentWeight += (isIn ? mace : -mace);
             currentBalance += (isIncome ? amount : -amount);
 
-            // 依據出入庫拆分重量與金額欄位 (不顯示負數，只放入對應的欄位)
             const inWeight = isIn ? mace : 0;
             const outWeight = !isIn ? mace : 0;
             const inAmount = isIncome ? amount : 0;
@@ -1803,16 +1794,16 @@ async function executeExport() {
             else if (tx.isBackdated) status = '補登';
 
             wsData.push([
-                index + 1, // 交易序號
-                tx.date ? tx.date.slice(0, 16).replace('T', ' ') : '', // 交易日期
+                index + 1, 
+                tx.date ? tx.date.slice(0, 16).replace('T', ' ') : '', 
                 tx.type || '',
                 tx.wDir || '',
                 outWeight,
                 inWeight,
-                parseFloat(currentWeight.toFixed(3)), // 庫存總重
+                parseFloat(currentWeight.toFixed(3)), 
                 outAmount,
                 inAmount,
-                currentBalance, // 結餘金額
+                currentBalance, 
                 tx.price || 0,
                 tx.target || '',
                 tx.note || '',
@@ -1823,7 +1814,6 @@ async function executeExport() {
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-        // 自動調整欄寬
         const colWidths = wsData[0].map((_, colIndex) => {
             return { wch: Math.max(...wsData.map(row => (row[colIndex] ? row[colIndex].toString().length : 0))) + 2 };
         });
@@ -1853,6 +1843,7 @@ function checkImportLimit() {
     document.getElementById('import-file').click();
 }
 
+// ★ 全新：支援新舊格式的智慧匯入機制
 async function doImport(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -1869,7 +1860,11 @@ async function doImport(event) {
             
             if (jsonData.length <= 1) { toast('檔案無有效資料', 'error'); return; }
             
-            if (!confirm(`偵測到 ${jsonData.length - 1} 筆資料，即將進行匯入。\n(請確保為系統舊版匯出的基本格式，新版14欄位格式暫不支援完整匯入)`)) return;
+            // 自動判斷版本：若第一欄為「交易序號」且欄數夠多，則是新版
+            const headers = jsonData[0];
+            const isNewFormat = headers[0] === '交易序號' && headers.length >= 13;
+            
+            if (!confirm(`偵測到 ${jsonData.length - 1} 筆資料 (${isNewFormat ? '新版14欄位' : '舊版8欄位'}格式)。\n即將進行匯入，請確認？`)) return;
             
             document.getElementById('loading').style.display = 'flex';
             document.getElementById('loading-text').textContent = '資料大量寫入中，請勿關閉畫面...';
@@ -1883,28 +1878,60 @@ async function doImport(event) {
                 const row = jsonData[i];
                 if (!row || row.length < 2) continue; 
                 
-                let dateStr = row[0] || new Date().toISOString();
-                if (!dateStr.includes('T')) dateStr = new Date(dateStr).toISOString();
+                let dateStr, type, wDir, mace, cDir, amount, price, target, note, isEdited, isBackdated;
 
-                let mace = parseFloat(row[3]) || 0;
-                let amount = parseInt(row[5]) || 0;
+                if (isNewFormat) {
+                    dateStr = row[1] || new Date().toISOString();
+                    type = row[2] || '一般進貨';
+                    wDir = row[3] || '';
+                    mace = Math.max(parseFloat(row[4]) || 0, parseFloat(row[5]) || 0);
+                    
+                    const outAmount = parseInt(row[7]) || 0;
+                    const inAmount = parseInt(row[8]) || 0;
+                    amount = Math.max(outAmount, inAmount);
+                    cDir = inAmount > 0 ? '收入' : (outAmount > 0 ? '支出' : '');
+                    
+                    price = parseFloat(row[10]) || 0;
+                    target = row[11] || '';
+                    note = row[12] || '';
+                    const status = row[13] || '';
+                    isEdited = (status === '已修改');
+                    isBackdated = (status === '補登');
+                } else {
+                    // 舊版 8 欄位邏輯
+                    dateStr = row[0] || new Date().toISOString();
+                    type = row[1] || '一般進貨';
+                    wDir = row[2] || '';
+                    mace = parseFloat(row[3]) || 0;
+                    cDir = row[4] || '';
+                    amount = parseInt(row[5]) || 0;
+                    target = row[6] || '';
+                    note = row[7] || '';
+                    price = 0;
+                    isEdited = false;
+                    isBackdated = true;
+                }
+
+                if (!dateStr.includes('T')) dateStr = new Date(dateStr).toISOString();
+                if (!wDir && mace > 0) wDir = '入庫';
+                if (!cDir && amount > 0) cDir = '支出';
 
                 const txData = {
                     timestamp: firebase.firestore.Timestamp.fromDate(new Date(dateStr)),
                     date: new Date(dateStr).toISOString(),
-                    isBackdated: true,
-                    isEdited: false,
-                    type: row[1] || '一般進貨',
-                    wDir: row[2] || (mace>0?'入庫':''),
+                    isBackdated: isBackdated,
+                    isEdited: isEdited,
+                    type: type,
+                    wDir: wDir,
                     mace: mace,
                     gram: +(mace * 3.75).toFixed(3),
                     tael: +(mace / 10).toFixed(4),
                     oz: +(mace / 8.294).toFixed(4),
-                    cDir: row[4] || (amount>0?'支出':''),
+                    cDir: cDir,
                     amount: amount,
-                    price: 0,
-                    target: row[6] || '',
-                    note: row[7] || ''
+                    price: price,
+                    target: target,
+                    note: note
                 };
 
                 const newRef = txColRef.doc();
@@ -2632,22 +2659,6 @@ function calcValue() {
   document.getElementById('cv-total').textContent = 'NT$ ' + total.toLocaleString();
 }
 
-// ★ 全新加入的智能收付計算器
-function calcAmount() {
-    const mace = parseFloat(document.getElementById('w-m').value) || 0;
-    const price = parseFloat(document.getElementById('f-price').value) || 0;
-    const wage = parseFloat(document.getElementById('f-wage').value) || 0;
-    
-    if (price > 0 || wage > 0) {
-        const total = Math.round((mace * price) + wage);
-        document.getElementById('f-amount').value = total;
-    }
-}
-
-function clearAutoCalc() {
-    // 當使用者手動修改「收付金額」時，我們不需要清空計算公式，只讓他覆蓋值即可。
-}
-
 function closeNukeModal() {
     document.getElementById('nuke-modal').style.display = 'none';
 }
@@ -2718,7 +2729,7 @@ async function executeNukeDatabase() {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.25\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.26\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
