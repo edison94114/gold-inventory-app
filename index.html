@@ -65,7 +65,7 @@
     .input-field:focus { border-color: var(--gold); }
     .btn-primary { width: 100%; background: linear-gradient(135deg, #c9a84c, #e8c96a); border: none; border-radius: 12px; padding: 15px; color: #1a1200; font-size: 17px; font-weight: bold; cursor: pointer; font-family: inherit; transition: opacity 0.2s; display: block; box-shadow: 0 4px 15px rgba(201,168,76,0.3); }
     .btn-primary:active { opacity: 0.8; }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; background: var(--bg4); box-shadow: none; color: var(--text3); }
     .divider-or { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
     .divider-or::before, .divider-or::after { content: ''; flex: 1; height: 0.5px; background: var(--border); }
     .divider-or span { font-size: 13px; color: var(--text3); }
@@ -285,6 +285,11 @@
     .backup-banner-actions { display: flex; gap: 8px; justify-content: flex-end; }
     .btn-backup { background: var(--red); color: #fff; border: none; border-radius: 8px; padding: 8px 12px; font-size: 13px; font-weight: bold; cursor: pointer; }
     .btn-backup-cancel { background: transparent; color: var(--text3); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px; cursor: pointer; }
+    
+    /* 🔴 新增：容量滿載警告橫幅 */
+    .limit-warning-banner { display: none; background: rgba(255,214,10,0.15); border: 1px solid rgba(255,214,10,0.5); color: var(--text); padding: 12px 14px; border-radius: 12px; margin-bottom: 14px; flex-direction: column; gap: 8px; }
+    .limit-warning-title { font-size: 14px; font-weight: bold; color: #ffd60a; display: flex; align-items: center; gap: 6px; }
+    .limit-warning-text { font-size: 13px; line-height: 1.4; color: var(--text2); }
 
     /* Modal */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
@@ -415,6 +420,12 @@
         </div>
       </div>
       <div class="dash-scroll">
+        
+        <div class="limit-warning-banner" id="limit-warning">
+            <div class="limit-warning-title">⚠️ 系統容量即將滿載 (<span id="limit-count">0</span>/4000 筆)</div>
+            <div class="limit-warning-text">為維持運作順暢，請盡速匯出 Excel 備份，並至帳號設定執行「清除所有資料」。隨後請以最新庫存重與結餘建立「期初設定」重新開始。</div>
+        </div>
+
         <div class="backup-banner" id="backup-reminder">
           <div class="backup-banner-top">
             <div class="backup-banner-text">💡 <b>溫馨提醒：</b>您有一段時間未備份資料，建議定期匯出 Excel 檔案以保全紀錄。</div>
@@ -551,10 +562,10 @@
         <div class="form-group">
           <label class="form-label">重量輸入（四單位即時連動）</label>
           <div class="weight-grid">
-            <div class="wf" id="wf-gram"><div class="wf-label">公克 (g)</div><input class="wf-input" type="number" inputmode="decimal" id="w-g" placeholder="0.000" oninput="syncW('g'); calcAmount();"/></div>
-            <div class="wf hl" id="wf-mace"><div class="wf-label">台錢 ★</div><input class="wf-input" type="number" inputmode="decimal" id="w-m" placeholder="0.000" oninput="syncW('m'); calcAmount();"/></div>
-            <div class="wf" id="wf-tael"><div class="wf-label">台兩</div><input class="wf-input" type="number" inputmode="decimal" id="w-t" placeholder="0.0000" oninput="syncW('t'); calcAmount();"/></div>
-            <div class="wf" id="wf-oz"><div class="wf-label">盎司 (oz)</div><input class="wf-input" type="number" inputmode="decimal" id="w-o" placeholder="0.0000" oninput="syncW('o'); calcAmount();"/></div>
+            <div class="wf" id="wf-gram"><div class="wf-label">公克 (g)</div><input class="wf-input" type="number" inputmode="decimal" id="w-g" placeholder="0.000" oninput="syncW('g');"/></div>
+            <div class="wf hl" id="wf-mace"><div class="wf-label">台錢 ★</div><input class="wf-input" type="number" inputmode="decimal" id="w-m" placeholder="0.000" oninput="syncW('m');"/></div>
+            <div class="wf" id="wf-tael"><div class="wf-label">台兩</div><input class="wf-input" type="number" inputmode="decimal" id="w-t" placeholder="0.0000" oninput="syncW('t');"/></div>
+            <div class="wf" id="wf-oz"><div class="wf-label">盎司 (oz)</div><input class="wf-input" type="number" inputmode="decimal" id="w-o" placeholder="0.0000" oninput="syncW('o');"/></div>
           </div>
         </div>
         <div class="form-group">
@@ -651,7 +662,7 @@
 
         <div class="menu-item" onclick="forceUpdateApp()">
           <div class="mi-left"><div class="mi-icon" style="background:#0d1a2b; color:#4ea8de;">🚀</div><div class="mi-label" style="color:#4ea8de;">檢查並強制更新系統</div></div>
-          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.29</div>
+          <div class="mi-arrow" style="color:#4ea8de;" id="version-display">v1.30</div>
         </div>
 
         <div class="menu-item" onclick="prepareExport()">
@@ -783,8 +794,10 @@
 <div id="toast"></div>
 <script>
 // ★ UI 顯示版本號 (更新版號)
-const APP_VERSION = 'v1.29';
-// ★ 快取結構版本號 (無需更新，因為新邏輯都在記憶體中處理，不影響快取)
+const APP_VERSION = 'v1.30';
+// ★ 系統筆數防護極限設定
+const MAX_TX_LIMIT = 4000;
+const WARNING_TX_LIMIT = 3900;
 const CACHE_SCHEMA_VERSION = 'v4'; 
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -1781,7 +1794,6 @@ function closeExportModal() {
     document.getElementById('export-modal').style.display = 'none';
 }
 
-// ★ 教科書級匯出機制：歷史回溯並產生符合需求的 14 欄位報表
 async function executeExport() {
     closeExportModal();
     toast('正在準備匯出資料，請稍候...', 'info');
@@ -1867,7 +1879,6 @@ function checkImportLimit() {
     document.getElementById('import-file').click();
 }
 
-// ★ 全新：支援新舊格式的智慧匯入機制
 async function doImport(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -2056,6 +2067,13 @@ async function updateStatsCache(txData, oldTxData = null, isDelete = false) {
 
 async function doSubmit() {
   if (!checkActionLimit('add', 200)) return;
+  
+  // ★ 容量防護機制：超過 4000 筆且為「新增模式」時，強制攔截寫入動作
+  const currentCount = getAllCachedIndices().length;
+  if (!editingTxId && currentCount >= MAX_TX_LIMIT) {
+      alert(`🚫 資料筆數已達極限 (${MAX_TX_LIMIT} 筆)\n\n系統已鎖定新增功能以保護資料庫。\n請立刻進行資料備份與清除作業，再以最新結餘重新展開新的紀錄週期。`);
+      return;
+  }
 
   const mace = parseFloat(document.getElementById('w-m').value) || 0;
   const amount = parseInt(document.getElementById('f-amount').value) || 0;
@@ -2242,7 +2260,11 @@ function editTx(id) {
   
   editingTxId = id; 
   document.getElementById('form-top-title').textContent = '修改交易紀錄';
-  document.getElementById('submit-btn').textContent = '💾 儲存修改內容';
+  
+  // 即使已經達到極限，修改既有資料仍被允許
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = false; 
+  btn.textContent = '💾 儲存修改內容';
   
   const pills = document.querySelectorAll('.type-pill');
   let targetPill = pills[0];
@@ -2262,7 +2284,7 @@ function editTx(id) {
   syncW('m'); 
   document.getElementById('f-amount').value = tx.amount || '';
   document.getElementById('f-price').value = tx.price || '';
-  document.getElementById('f-wage').value = tx.wage || ''; // 未來擴充保留
+  document.getElementById('f-wage').value = tx.wage || ''; 
   document.getElementById('f-target').value = tx.target || '';
   document.getElementById('f-note').value = tx.note || '';
 
@@ -2342,6 +2364,18 @@ function refreshDash() {
   const today = new Date().toISOString().slice(0,10);
   let tiw=0,tow=0,tic=0,toc=0;
   const allTx = getAllCachedIndices(); 
+  const txCount = allTx.length;
+  
+  // ★ 系統容量警戒橫幅邏輯
+  const limitBanner = document.getElementById('limit-warning');
+  if (limitBanner) {
+      if (txCount >= WARNING_TX_LIMIT) {
+          limitBanner.style.display = 'flex';
+          document.getElementById('limit-count').textContent = txCount;
+      } else {
+          limitBanner.style.display = 'none';
+      }
+  }
   
   allTx.forEach(tx => {
     if ((tx.date||'').slice(0,10)===today) {
@@ -2633,7 +2667,17 @@ function getNowLocal() {
 function clearForm() {
   editingTxId = null; 
   document.getElementById('form-top-title').textContent = '新增交易';
-  document.getElementById('submit-btn').textContent = '確認寫入紀錄';
+  
+  // ★ 容量極限防護：表單重置時檢查，若達 4000 筆鎖死新增按鈕
+  const currentCount = getAllCachedIndices().length;
+  const btn = document.getElementById('submit-btn');
+  if (currentCount >= MAX_TX_LIMIT) {
+      btn.disabled = true;
+      btn.textContent = '🚫 資料已達極限，請先備份並清除';
+  } else {
+      btn.disabled = false;
+      btn.textContent = '確認寫入紀錄';
+  }
 
   ['w-g','w-m','w-t','w-o','f-amount','f-price','f-wage','f-target','f-note'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
   document.getElementById('f-datetime').value = getNowLocal(); 
@@ -2779,7 +2823,7 @@ async function executeNukeDatabase() {
 }
 
 function showAbout() {
-  alert('貴金屬出入庫存系統 v1.29\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
+  alert('貴金屬出入庫存系統 v1.30\n\n【免責聲明】\n本程式僅供學術研究與個人紀錄使用，提供使用者自由免費操作，開發者不對任何資料遺失、計算誤差或財務損失負擔法律責任。作者保留隨時修改程式功能或終止本服務之權利。\n\n儲存於Firebase雲端，各帳號資料完全獨立，不互干涉。\n\n💡 覺得好用嗎？歡迎隨喜贊助作者開發（小黃金也收哦！😆）\n\n© 2026 Edison.lin (edison94114@gmail.com)');
 }
 
 function toast(msg, type='') {
